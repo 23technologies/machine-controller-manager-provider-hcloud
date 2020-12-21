@@ -1,9 +1,10 @@
-module github.com/gardener/machine-controller-manager-provider-sampleprovider
+module github.com/23technologies/machine-controller-manager-provider-hcloud
 
 go 1.13
 
 require (
 	github.com/gardener/machine-controller-manager v0.36.0
+	github.com/hetznercloud/hcloud-go v1.23.1
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/prometheus/client_golang v1.5.1 // indirect

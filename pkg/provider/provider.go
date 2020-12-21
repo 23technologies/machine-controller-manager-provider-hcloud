@@ -18,7 +18,7 @@ limitations under the License.
 package provider
 
 import (
-	"github.com/gardener/machine-controller-manager-provider-sampleprovider/pkg/spi"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 )
 

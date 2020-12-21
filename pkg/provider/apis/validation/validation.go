@@ -18,12 +18,28 @@ limitations under the License.
 package validation
 
 import (
-	api "github.com/gardener/machine-controller-manager-provider-sampleprovider/pkg/provider/apis"
+	"fmt"
+	api "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider/apis"
 	corev1 "k8s.io/api/core/v1"
 )
 
 // ValidateProviderSpecNSecret validates provider spec and secret to check if all fields are present and valid
 func ValidateProviderSpecNSecret(spec *api.ProviderSpec, secrets *corev1.Secret) []error {
-	// Code for validation of providerSpec goes here
-	return nil
+	var allErrs []error
+
+	if "" == spec.ImageName {
+		allErrs = append(allErrs, fmt.Errorf("imageName is required field"))
+	}
+	if "" == spec.ServerType {
+		allErrs = append(allErrs, fmt.Errorf("serverType is required field"))
+	}
+	if "" == spec.Datacenter {
+		allErrs = append(allErrs, fmt.Errorf("datacenter is required field"))
+	}
+	if "" == spec.KeyName {
+		allErrs = append(allErrs, fmt.Errorf("keyName is required field"))
+	}
+	//allErrs = append(allErrs, ValidateSecret(secret)...)
+
+	return allErrs
 }

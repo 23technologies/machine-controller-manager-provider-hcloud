@@ -19,12 +19,45 @@ package provider
 
 import (
 	"context"
-
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	api "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider/apis"
+	validation "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider/apis/validation"
+	v1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
+	"github.com/hetznercloud/hcloud-go/hcloud"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
+	"strconv"
 )
+
+func decodeProviderSpecAndSecret(machineClass *v1alpha1.MachineClass, secret *corev1.Secret) (*api.ProviderSpec, error) {
+	var (
+		providerSpec *api.ProviderSpec
+	)
+
+	// Extract providerSpec
+	if machineClass == nil {
+		return nil, status.Error(codes.Internal, "MachineClass ProviderSpec is nil")
+	}
+
+	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Validate the Spec
+	ValidationErr := validation.ValidateProviderSpecNSecret(providerSpec, secret)
+	if ValidationErr != nil {
+		err = fmt.Errorf("Error while validating ProviderSpec %v", ValidationErr)
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return providerSpec, nil
+}
 
 // NOTE
 //
@@ -58,11 +91,83 @@ import (
 // This logic is used by safety controller to delete orphan VMs which are not backed by any machine CRD
 //
 func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
+	var (
+		exists       bool
+		userData     []byte
+		machine      = req.Machine
+		secret       = req.Secret
+		machineClass = req.MachineClass
+	)
 	// Log messages to track request
 	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
 
-	return &driver.CreateMachineResponse{}, status.Error(codes.Unimplemented, "")
+	providerSpec, err := decodeProviderSpecAndSecret(machineClass, secret)
+	if err != nil {
+		return nil, err
+	}
+
+	if userData, exists = secret.Data["userData"]; !exists {
+		return nil, status.Error(codes.Internal, "userData doesn't exist")
+	}
+	UserDataEnc := base64.StdEncoding.EncodeToString([]byte(userData))
+
+	token := string(req.Secret.Data["token"])
+	client := hcloud.NewClient(hcloud.WithToken(token))
+
+	imageName := providerSpec.ImageName
+	image, _, err := client.Image.Get(ctx, imageName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if image == nil {
+		images, err := client.Image.AllWithOpts(ctx, hcloud.ImageListOpts{Name: imageName, IncludeDeprecated: true})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if len(images) == 0 {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("Image %s not found", imageName))
+		} else {
+			image = images[0]
+		}
+	}
+
+	name := machine.Name
+	serverType := providerSpec.ServerType
+	labels := map[string]string{"createdby": "gardener", "test": "test"}
+	startAfterCreate := true
+
+	opts := hcloud.ServerCreateOpts{
+		Name: name,
+		ServerType: &hcloud.ServerType{
+			Name: serverType,
+		},
+		Image:            image,
+		Labels:           labels,
+		Datacenter:       &hcloud.Datacenter{Name: providerSpec.Datacenter},
+		UserData:         UserDataEnc,
+		StartAfterCreate: &startAfterCreate,
+	}
+
+	var sshKey *hcloud.SSHKey
+	sshKey, _, err = client.SSHKey.Get(ctx, providerSpec.KeyName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	opts.SSHKeys = append(opts.SSHKeys, sshKey)
+
+	server, _, err := client.Server.Create(ctx, opts)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	response := &driver.CreateMachineResponse{
+		ProviderID: strconv.Itoa(server.Server.ID),
+		NodeName:   server.Server.Name,
+	}
+
+	return response, nil
 }
 
 // DeleteMachine handles a machine deletion request
@@ -81,7 +186,26 @@ func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineR
 	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
 
-	return &driver.DeleteMachineResponse{}, status.Error(codes.Unimplemented, "")
+	token := string(req.Secret.Data["token"])
+	client := hcloud.NewClient(hcloud.WithToken(token))
+
+	server, _, err := client.Server.Get(ctx, req.Machine.Spec.ProviderID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if server == nil {
+		klog.V(3).Infof("VM %q for Machine %q did not exist", req.Machine.Spec.ProviderID, req.Machine.Name)
+		return &driver.DeleteMachineResponse{}, nil
+	}
+
+	_, err = client.Server.Delete(ctx, server)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	klog.V(3).Infof("VM %q for Machine %q was terminated succesfully", req.Machine.Spec.ProviderID, req.Machine.Name)
+	return &driver.DeleteMachineResponse{}, nil
 }
 
 // GetMachineStatus handles a machine get status request
@@ -105,7 +229,28 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
 
-	return &driver.GetMachineStatusResponse{}, status.Error(codes.Unimplemented, "")
+	token := string(req.Secret.Data["token"])
+	client := hcloud.NewClient(hcloud.WithToken(token))
+
+	server, _, err := client.Server.Get(ctx, req.Machine.Spec.ProviderID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if server == nil {
+		klog.V(3).Infof("VM %q for Machine %q did not exist", req.Machine.Spec.ProviderID, req.Machine.Name)
+		return &driver.GetMachineStatusResponse{}, status.Error(codes.NotFound, "")
+	}
+
+	response := &driver.GetMachineStatusResponse{
+		NodeName:   server.Name,
+		ProviderID: strconv.Itoa(server.ID),
+	}
+
+	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
+	return response, nil
+	// return &driver.GetMachineStatusResponse{}, status.Error(codes.Unimplemented, "")
+
 }
 
 // ListMachines lists all the machines possibilly created by a providerSpec
@@ -124,9 +269,33 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
-	defer klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
+	defer klog.V(2).Infof("List machines request has been processed for %q", req.MachineClass.Name)
 
-	return &driver.ListMachinesResponse{}, status.Error(codes.Unimplemented, "")
+	token := string(req.Secret.Data["token"])
+	client := hcloud.NewClient(hcloud.WithToken(token))
+
+	listopts := hcloud.ServerListOpts{
+		ListOpts: hcloud.ListOpts{
+			LabelSelector: "createdby=gardener",
+			PerPage:       50,
+		},
+	}
+	servers, err := client.Server.AllWithOpts(ctx, listopts)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	listOfVMs := make(map[string]string)
+
+	for _, server := range servers {
+		listOfVMs[strconv.Itoa(server.ID)] = server.Name
+	}
+
+	resp := &driver.ListMachinesResponse{
+		MachineList: listOfVMs,
+	}
+
+	return resp, nil
+	// return &driver.ListMachinesResponse{}, status.Error(codes.Unimplemented, "")
 }
 
 // GetVolumeIDs returns a list of Volume IDs for all PV Specs for whom an provider volume was found

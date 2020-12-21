@@ -49,7 +49,7 @@ start:
 			--machine-safety-apiserver-statuscheck-timeout=30s \
 			--machine-safety-apiserver-statuscheck-period=1m \
 			--machine-safety-orphan-vms-period=30m \
-			--v=3
+			--v=5
 
 #########################################
 # Rules for re-vendoring
