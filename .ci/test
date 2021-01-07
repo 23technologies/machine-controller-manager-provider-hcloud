@@ -36,11 +36,12 @@ fi
 # temporarily by using symbolic links.
 if [[ "${SOURCE_PATH}" != *"src/github.com/gardener/machine-controller-manager-provider-hcloud" ]]; then
   SOURCE_SYMLINK_PATH="${SOURCE_PATH}/tmp/src/github.com/gardener/machine-controller-manager-provider-hcloud"
-  if [[ -d "${SOURCE_PATH}/tmp" ]]; then
-    rm -rf "${SOURCE_PATH}/tmp"
+
+  if [[ ! -d "${SOURCE_PATH}/tmp" ]]; then
+    mkdir -p "${SOURCE_PATH}/tmp/src/github.com/gardener"
+    ln -s "${SOURCE_PATH}" "${SOURCE_SYMLINK_PATH}"
   fi
-  mkdir -p "${SOURCE_PATH}/tmp/src/github.com/gardener"
-  ln -s "${SOURCE_PATH}" "${SOURCE_SYMLINK_PATH}"
+
   cd "${SOURCE_SYMLINK_PATH}"
 
   export GOPATH="${SOURCE_PATH}/tmp"
@@ -48,10 +49,12 @@ if [[ "${SOURCE_PATH}" != *"src/github.com/gardener/machine-controller-manager-p
   export PATH="${GOBIN}:${PATH}"
 fi
 
-# Install Ginkgo (test framework) to be able to execute the tests.
-echo "Fetching Ginkgo frawework"
-GO111MODULE=off go get -u github.com/onsi/ginkgo/ginkgo
-echo "Successfully fetched Ginkgo frawework"
+if [[ ! -d "${GOPATH}/src/github.com/onsi/ginkgo/ginkgo" ]]; then
+  # Install Ginkgo (test framework) to be able to execute the tests.
+  echo "Fetching Ginkgo frawework"
+  GO111MODULE=off go get -u github.com/onsi/ginkgo/ginkgo
+  echo "Successfully fetched Ginkgo frawework"
+fi
 
 ##############################################################################
 
