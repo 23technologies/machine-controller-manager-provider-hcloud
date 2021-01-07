@@ -1,0 +1,153 @@
+/*
+Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// Package validation - validation is used to validate cloud specific ProviderSpec
+package validation
+
+import (
+	"fmt"
+
+	api "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider/apis"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+)
+
+var _ = Describe("Validation", func() {
+	providerSecret := &corev1.Secret{
+		Data: map[string][]byte{
+			"userData": []byte("dummy-user-data"),
+		},
+	}
+
+	Describe("#ValidateHCloudProviderSpec", func() {
+		type setup struct {
+		}
+
+		type action struct {
+			spec   *api.ProviderSpec
+			secret *corev1.Secret
+		}
+
+		type expect struct {
+			errToHaveOccurred bool
+			errList           []error
+		}
+
+		type data struct {
+			setup  setup
+			action action
+			expect expect
+		}
+
+		DescribeTable("##table",
+			func(data *data) {
+				validationErr := ValidateHCloudProviderSpec(data.action.spec, data.action.secret)
+
+				if data.expect.errToHaveOccurred {
+					Expect(validationErr).NotTo(Equal(nil))
+					Expect(validationErr).To(Equal(data.expect.errList))
+				}
+
+			},
+
+			Entry("Simple validation of HCloud machine class", &data{
+				setup: setup{},
+				action: action{
+					spec: &api.ProviderSpec{
+						ImageName: "ubuntu-20.04",
+						ServerType: "cx11-ceph",
+						Datacenter: "hel1-dc2",
+						KeyName: "test-ssh-publickey",
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: false,
+				},
+			}),
+			Entry("imageName field missing", &data{
+				setup: setup{},
+				action: action{
+					spec: &api.ProviderSpec{
+						ServerType: "cx11-ceph",
+						Datacenter: "hel1-dc2",
+						KeyName: "test-ssh-publickey",
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("imageName is required field"),
+					},
+				},
+			}),
+			Entry("serverType field missing", &data{
+				setup: setup{},
+				action: action{
+					spec: &api.ProviderSpec{
+						ImageName: "ubuntu-20.04",
+						Datacenter: "hel1-dc2",
+						KeyName: "test-ssh-publickey",
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("serverType is required field"),
+					},
+				},
+			}),
+			Entry("datacenter field missing", &data{
+				setup: setup{},
+				action: action{
+					spec: &api.ProviderSpec{
+						ImageName: "ubuntu-20.04",
+						ServerType: "cx11-ceph",
+						KeyName: "test-ssh-publickey",
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("datacenter is required field"),
+					},
+				},
+			}),
+			Entry("keyName field missing", &data{
+				setup: setup{},
+				action: action{
+					spec: &api.ProviderSpec{
+						ImageName: "ubuntu-20.04",
+						ServerType: "cx11-ceph",
+						Datacenter: "hel1-dc2",
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("keyName is required field"),
+					},
+				},
+			}),
+		)
+	})
+})
