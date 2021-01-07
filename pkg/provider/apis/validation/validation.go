@@ -23,8 +23,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ValidateProviderSpecNSecret validates provider spec and secret to check if all fields are present and valid
-func ValidateProviderSpecNSecret(spec *api.ProviderSpec, secrets *corev1.Secret) []error {
+// ValidateHCloudProviderSpec validates provider spec and secret to check if all fields are present and valid
+func ValidateHCloudProviderSpec(spec *api.ProviderSpec, secrets *corev1.Secret) []error {
 	var allErrs []error
 
 	if "" == spec.ImageName {

@@ -50,7 +50,7 @@ func decodeProviderSpecAndSecret(machineClass *v1alpha1.MachineClass, secret *co
 	}
 
 	// Validate the Spec
-	ValidationErr := validation.ValidateProviderSpecNSecret(providerSpec, secret)
+	ValidationErr := validation.ValidateHCloudProviderSpec(providerSpec, secret)
 	if ValidationErr != nil {
 		err = fmt.Errorf("Error while validating ProviderSpec %v", ValidationErr)
 		return nil, status.Error(codes.Internal, err.Error())
