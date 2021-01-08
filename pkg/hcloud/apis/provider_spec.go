@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package spi
+// Package api is the main package for provider specific APIs
+package api
 
-// SessionProviderInterface provides an interface to deal with cloud provider session
-type SessionProviderInterface interface {
-	// NewSession(*corev1.Secret, string) (*session.Session, error)
-	// NewEC2API(*session.Session) ec2iface.EC2API
+// ProviderSpec is the spec to be used while parsing the calls.
+type ProviderSpec struct {
+	ServerType string `json:"serverType,omitempty"`
+	ImageName  string `json:"imageName,omitempty"`
+	Datacenter string `json:"datacenter,omitempty"`
+	KeyName    string `json:"keyName,omitempty"`
 }
-
-// PluginSPIImpl is the real implementation of SPI interface that makes the calls to the provider SDK.
-type PluginSPIImpl struct{}

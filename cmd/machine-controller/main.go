@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"os"
 
-	cp "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud"
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	_ "github.com/gardener/machine-controller-manager/pkg/util/client/metrics/prometheus" // for client metric registration
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/app"
@@ -46,7 +46,7 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	provider := cp.NewProvider(&spi.PluginSPIImpl{})
+	provider := hcloud.NewHCloudProvider(&spi.PluginSPIImpl{})
 
 	if err := app.Run(s, provider); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,50 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package provider contains the cloud provider specific implementations to manage machines
-package provider
+// Package hcloud contains the HCloud provider specific implementations to manage machines
+package hcloud
 
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	api "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider/apis"
-	validation "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/provider/apis/validation"
-	v1alpha1 "github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/decoder"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	"github.com/hetznercloud/hcloud-go/hcloud"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 	"strconv"
 )
-
-func decodeProviderSpecAndSecret(machineClass *v1alpha1.MachineClass, secret *corev1.Secret) (*api.ProviderSpec, error) {
-	var (
-		providerSpec *api.ProviderSpec
-	)
-
-	// Extract providerSpec
-	if machineClass == nil {
-		return nil, status.Error(codes.Internal, "MachineClass ProviderSpec is nil")
-	}
-
-	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	// Validate the Spec
-	ValidationErr := validation.ValidateHCloudProviderSpec(providerSpec, secret)
-	if ValidationErr != nil {
-		err = fmt.Errorf("Error while validating ProviderSpec %v", ValidationErr)
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return providerSpec, nil
-}
 
 // NOTE
 //
@@ -69,28 +41,13 @@ func decodeProviderSpecAndSecret(machineClass *v1alpha1.MachineClass, secret *co
 // Also make sure each method return appropriate errors mentioned in `https://github.com/gardener/machine-controller-manager/blob/master/docs/development/machine_error_codes.md`
 
 // CreateMachine handles a machine creation request
-// REQUIRED METHOD
 //
-// REQUEST PARAMETERS (driver.CreateMachineRequest)
-// Machine               *v1alpha1.Machine        Machine object from whom VM is to be created
-// MachineClass          *v1alpha1.MachineClass   MachineClass backing the machine object
-// Secret                *corev1.Secret           Kubernetes secret that contains any sensitive data/credentials
+// PARAMETERS
+// Machine      *v1alpha1.Machine      Machine object from whom VM is to be created
+// MachineClass *v1alpha1.MachineClass MachineClass backing the machine object
+// Secret       *corev1.Secret         Kubernetes secret that contains any sensitive data/credentials
 //
-// RESPONSE PARAMETERS (driver.CreateMachineResponse)
-// ProviderID            string                   Unique identification of the VM at the cloud provider. This could be the same/different from req.MachineName.
-//                                                ProviderID typically matches with the node.Spec.ProviderID on the node object.
-//                                                Eg: gce://project-name/region/vm-ProviderID
-// NodeName              string                   Returns the name of the node-object that the VM register's with Kubernetes.
-//                                                This could be different from req.MachineName as well
-// LastKnownState        string                   (Optional) Last known state of VM during the current operation.
-//                                                Could be helpful to continue operations in future requests.
-//
-// OPTIONAL IMPLEMENTATION LOGIC
-// It is optionally expected by the safety controller to use an identification mechanisms to map the VM Created by a providerSpec.
-// These could be done using tag(s)/resource-groups etc.
-// This logic is used by safety controller to delete orphan VMs which are not backed by any machine CRD
-//
-func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
+func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	var (
 		exists       bool
 		userData     []byte
@@ -102,7 +59,7 @@ func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineR
 	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
 
-	providerSpec, err := decodeProviderSpecAndSecret(machineClass, secret)
+	providerSpec, err := decoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +138,7 @@ func (p *Provider) CreateMachine(ctx context.Context, req *driver.CreateMachineR
 // LastKnownState        bytes(blob)              (Optional) Last known state of VM during the current operation.
 //                                                Could be helpful to continue operations in future requests.
 //
-func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
+func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
 	// Log messages to track delete request
 	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
@@ -224,7 +181,7 @@ func (p *Provider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineR
 //                                                This could be different from req.MachineName as well
 //
 // The request should return a NOT_FOUND (5) status error code if the machine is not existing
-func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
+func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
@@ -266,7 +223,7 @@ func (p *Provider) GetMachineStatus(ctx context.Context, req *driver.GetMachineS
 // MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
 //                                           for all machine's who where possibilly created by this ProviderSpec
 //
-func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
+func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
 	defer klog.V(2).Infof("List machines request has been processed for %q", req.MachineClass.Name)
@@ -306,7 +263,7 @@ func (p *Provider) ListMachines(ctx context.Context, req *driver.ListMachinesReq
 // RESPONSE PARAMETERS (driver.GetVolumeIDsResponse)
 // VolumeIDs             []string                             VolumeIDs is a repeated list of VolumeIDs.
 //
-func (p *Provider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
+func (p *MachineProvider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
@@ -333,7 +290,7 @@ func (p *Provider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsReq
 // RESPONSE PARAMETERS (driver.GenerateMachineClassForMigration)
 // NONE
 //
-func (p *Provider) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
+func (p *MachineProvider) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("MigrateMachineClass request has been recieved for %q", req.ClassSpec)
 	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)
