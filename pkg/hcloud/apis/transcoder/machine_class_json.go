@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package decoder is used for API related object transformations
-package decoder
+// Package transcoder is used for API related object transformations
+package transcoder
 
 import (
 	"encoding/json"

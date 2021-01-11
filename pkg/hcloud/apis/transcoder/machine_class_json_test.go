@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package decoder is used for API related object transformations
-package decoder
+// Package transcoder is used for API related object transformations
+package transcoder
 
 import (
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-var _ = Describe("Decoder", func() {
+var _ = Describe("Transcoder", func() {
 	machineClass := &v1alpha1.MachineClass{
 		ProviderSpec: runtime.RawExtension{
 			Raw: []byte("{\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"datacenter\":\"hel1-dc2\",\"keyName\":\"test-ssh-publickey\"}"),

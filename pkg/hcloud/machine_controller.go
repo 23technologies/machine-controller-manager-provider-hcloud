@@ -22,7 +22,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/decoder"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
@@ -30,15 +30,6 @@ import (
 	"k8s.io/klog"
 	"strconv"
 )
-
-// NOTE
-//
-// The basic working of the controller will work with just implementing the CreateMachine() & DeleteMachine() methods.
-// You can first implement these two methods and check the working of the controller.
-// Leaving the other methods to NOT_IMPLEMENTED error status.
-// Once this works you can implement the rest of the methods.
-//
-// Also make sure each method return appropriate errors mentioned in `https://github.com/gardener/machine-controller-manager/blob/master/docs/development/machine_error_codes.md`
 
 // CreateMachine handles a machine creation request
 //
@@ -56,10 +47,10 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		machineClass = req.MachineClass
 	)
 	// Log messages to track request
-	klog.V(2).Infof("Machine creation request has been recieved for %q", req.Machine.Name)
+	klog.V(2).Infof("Machine creation request has been received for %q", req.Machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
 
-	providerSpec, err := decoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
+	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
 	if err != nil {
 		return nil, err
 	}
