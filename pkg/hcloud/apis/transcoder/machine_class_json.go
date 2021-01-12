@@ -19,13 +19,12 @@ package transcoder
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 	validation "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/validation"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
-	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
-	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -41,19 +40,18 @@ func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, sec
 
 	// Extract providerSpec
 	if machineClass == nil {
-		return nil, status.Error(codes.Internal, "MachineClass ProviderSpec is nil")
+		return nil, errors.New("MachineClass provided is nil")
 	}
 
-	err := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	jsonErr := json.Unmarshal(machineClass.ProviderSpec.Raw, &providerSpec)
+	if jsonErr != nil {
+		return nil, fmt.Errorf("Failed to parse JSON data provided as ProviderSpec: %v", jsonErr)
 	}
 
 	// Validate the Spec
-	ValidationErr := validation.ValidateHCloudProviderSpec(providerSpec, secret)
-	if ValidationErr != nil {
-		err = fmt.Errorf("Error while validating ProviderSpec %v", ValidationErr)
-		return nil, status.Error(codes.Internal, err.Error())
+	validationErr := validation.ValidateHCloudProviderSpec(providerSpec, secret)
+	if validationErr != nil {
+		return nil, fmt.Errorf("Error while validating ProviderSpec %v", validationErr)
 	}
 
 	return providerSpec, nil

@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
@@ -40,8 +41,6 @@ import (
 //
 func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	var (
-		exists       bool
-		userData     []byte
 		machine      = req.Machine
 		secret       = req.Secret
 		machineClass = req.MachineClass
@@ -52,29 +51,33 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if userData, exists = secret.Data["userData"]; !exists {
+	userData, ok := secret.Data["userData"]
+	if !ok {
 		return nil, status.Error(codes.Internal, "userData doesn't exist")
 	}
-	UserDataEnc := base64.StdEncoding.EncodeToString([]byte(userData))
 
+	userDataBase64Enc := base64.StdEncoding.EncodeToString([]byte(userData))
 	token := string(req.Secret.Data["token"])
-	client := hcloud.NewClient(hcloud.WithToken(token))
+
+	client := api.GetClientForToken(token)
 
 	imageName := providerSpec.ImageName
 	image, _, err := client.Image.Get(ctx, imageName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if image == nil {
 		images, err := client.Image.AllWithOpts(ctx, hcloud.ImageListOpts{Name: imageName, IncludeDeprecated: true})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
 		if len(images) == 0 {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("Image %s not found", imageName))
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Image %s not found", imageName))
 		} else {
 			image = images[0]
 		}
@@ -93,7 +96,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		Image:            image,
 		Labels:           labels,
 		Datacenter:       &hcloud.Datacenter{Name: providerSpec.Datacenter},
-		UserData:         UserDataEnc,
+		UserData:         userDataBase64Enc,
 		StartAfterCreate: &startAfterCreate,
 	}
 
@@ -135,7 +138,7 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
 
 	token := string(req.Secret.Data["token"])
-	client := hcloud.NewClient(hcloud.WithToken(token))
+	client := api.GetClientForToken(token)
 
 	server, _, err := client.Server.Get(ctx, req.Machine.Spec.ProviderID)
 	if err != nil {
@@ -178,7 +181,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
 
 	token := string(req.Secret.Data["token"])
-	client := hcloud.NewClient(hcloud.WithToken(token))
+	client := api.GetClientForToken(token)
 
 	server, _, err := client.Server.Get(ctx, req.Machine.Spec.ProviderID)
 	if err != nil {
@@ -220,7 +223,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 	defer klog.V(2).Infof("List machines request has been processed for %q", req.MachineClass.Name)
 
 	token := string(req.Secret.Data["token"])
-	client := hcloud.NewClient(hcloud.WithToken(token))
+	client := api.GetClientForToken(token)
 
 	listopts := hcloud.ServerListOpts{
 		ListOpts: hcloud.ListOpts{
