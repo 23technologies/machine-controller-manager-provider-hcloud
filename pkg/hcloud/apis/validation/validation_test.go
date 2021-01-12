@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -56,24 +57,20 @@ var _ = Describe("Validation", func() {
 
 		DescribeTable("##table",
 			func(data *data) {
-				validationErr := ValidateHCloudProviderSpec(data.action.spec, data.action.secret)
+				errList := ValidateHCloudProviderSpec(data.action.spec, data.action.secret)
 
 				if data.expect.errToHaveOccurred {
-					Expect(validationErr).NotTo(Equal(nil))
-					Expect(validationErr).To(Equal(data.expect.errList))
+					Expect(errList).NotTo(BeNil())
+					Expect(errList).To(Equal(data.expect.errList))
+				} else {
+					Expect(errList).To(BeEmpty())
 				}
-
 			},
 
 			Entry("Simple validation of HCloud machine class", &data{
 				setup: setup{},
 				action: action{
-					spec: &api.ProviderSpec{
-						ImageName: "ubuntu-20.04",
-						ServerType: "cx11-ceph",
-						Datacenter: "hel1-dc2",
-						KeyName: "test-ssh-publickey",
-					},
+					spec: mock.NewProviderSpec(),
 					secret: providerSecret,
 				},
 				expect: expect{
@@ -84,9 +81,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &api.ProviderSpec{
-						ServerType: "cx11-ceph",
-						Datacenter: "hel1-dc2",
-						KeyName: "test-ssh-publickey",
+						ServerType: mock.TestProviderSpecServerType,
+						Datacenter: mock.TestProviderSpecDatacenter,
+						KeyName: mock.TestProviderSpecKeyName,
 					},
 					secret: providerSecret,
 				},
@@ -101,9 +98,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &api.ProviderSpec{
-						ImageName: "ubuntu-20.04",
-						Datacenter: "hel1-dc2",
-						KeyName: "test-ssh-publickey",
+						ImageName: mock.TestProviderSpecImageName,
+						Datacenter: mock.TestProviderSpecDatacenter,
+						KeyName: mock.TestProviderSpecKeyName,
 					},
 					secret: providerSecret,
 				},
@@ -118,9 +115,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &api.ProviderSpec{
-						ImageName: "ubuntu-20.04",
-						ServerType: "cx11-ceph",
-						KeyName: "test-ssh-publickey",
+						ImageName: mock.TestProviderSpecImageName,
+						ServerType: mock.TestProviderSpecServerType,
+						KeyName: mock.TestProviderSpecKeyName,
 					},
 					secret: providerSecret,
 				},
@@ -135,9 +132,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &api.ProviderSpec{
-						ImageName: "ubuntu-20.04",
-						ServerType: "cx11-ceph",
-						Datacenter: "hel1-dc2",
+						ImageName: mock.TestProviderSpecImageName,
+						ServerType: mock.TestProviderSpecServerType,
+						Datacenter: mock.TestProviderSpecDatacenter,
 					},
 					secret: providerSecret,
 				},

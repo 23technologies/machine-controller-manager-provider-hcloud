@@ -18,24 +18,15 @@ limitations under the License.
 package transcoder
 
 import (
-	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("Transcoder", func() {
-	machineClass := &v1alpha1.MachineClass{
-		ProviderSpec: runtime.RawExtension{
-			Raw: []byte("{\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"datacenter\":\"hel1-dc2\",\"keyName\":\"test-ssh-publickey\"}"),
-		},
-	}
-	unsupportedMachineClass := &v1alpha1.MachineClass{
-		ProviderSpec: runtime.RawExtension{
-			Raw: []byte("{\"data\":[]}"),
-		},
-	}
+	machineClass := mock.NewMachineClass()
+	unsupportedMachineClass := mock.NewMachineClassWithProviderSpec([]byte("{\"data\":[]}"))
 
 	providerSecret := &corev1.Secret{
 		Data: map[string][]byte{
