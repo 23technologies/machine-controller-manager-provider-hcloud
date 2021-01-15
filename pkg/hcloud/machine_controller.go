@@ -48,6 +48,10 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	klog.V(2).Infof("Machine creation request has been received for %q", machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", machine.Name)
 
+	if machine.Spec.ProviderID != "" {
+		return nil, status.Error(codes.InvalidArgument, "Machine creation with existing provider Id is not supported")
+	}
+
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -172,6 +176,11 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 	// Log messages to track start and end of request
 	klog.V(2).Infof("Get request has been received for %q", machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", machine.Name)
+
+	// Handle case where machine lookup occurs with empty provider ID
+	if machine.Spec.ProviderID == "" {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("Provider ID for machine %q is not defined", machine.Name))
+	}
 
 	serverID, err := transcoder.DecodeServerIDAsStringFromProviderID(machine.Spec.ProviderID)
 	if err != nil {

@@ -24,10 +24,13 @@ import (
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var _ = Describe("MachineController", func() {
@@ -71,7 +74,7 @@ var _ = Describe("MachineController", func() {
 
 		type expect struct {
 			errToHaveOccurred bool
-			errList           []error
+			errStatus         codes.Code
 		}
 
 		type data struct {
@@ -87,13 +90,16 @@ var _ = Describe("MachineController", func() {
 
 				if data.expect.errToHaveOccurred {
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(data.expect.errList))
+
+					errStatus, ok := err.(*status.Status)
+					Expect(ok).To(BeTrue())
+					Expect(errStatus.Code()).To(Equal(data.expect.errStatus))
 				} else {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			},
 
-			Entry("Valid use case", &data{
+			Entry("is correctly executed", &data{
 				setup: setup{},
 				action: action{
 					&driver.CreateMachineRequest{
@@ -104,6 +110,21 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: false,
+				},
+			}),
+
+			Entry("contains a provider ID", &data{
+				setup: setup{},
+				action: action{
+					&driver.CreateMachineRequest{
+						Machine:      mock.NewMachine(42),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
 				},
 			}),
 		)
@@ -119,7 +140,7 @@ var _ = Describe("MachineController", func() {
 
 		type expect struct {
 			errToHaveOccurred bool
-			errList           []error
+			errStatus         codes.Code
 		}
 
 		type data struct {
@@ -135,13 +156,16 @@ var _ = Describe("MachineController", func() {
 
 				if data.expect.errToHaveOccurred {
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(data.expect.errList))
+
+					errStatus, ok := err.(*status.Status)
+					Expect(ok).To(BeTrue())
+					Expect(errStatus.Code()).To(Equal(data.expect.errStatus))
 				} else {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			},
 
-			Entry("Valid use case", &data{
+			Entry("is correctly executed", &data{
 				setup: setup{},
 				action: action{
 					&driver.DeleteMachineRequest{
@@ -152,6 +176,21 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: false,
+				},
+			}),
+
+			Entry("contains no provider ID", &data{
+				setup: setup{},
+				action: action{
+					&driver.DeleteMachineRequest{
+						Machine:      mock.NewMachine(-1),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
 				},
 			}),
 		)
@@ -167,7 +206,7 @@ var _ = Describe("MachineController", func() {
 
 		type expect struct {
 			errToHaveOccurred bool
-			errList           []error
+			errStatus         codes.Code
 		}
 
 		type data struct {
@@ -183,13 +222,16 @@ var _ = Describe("MachineController", func() {
 
 				if data.expect.errToHaveOccurred {
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(data.expect.errList))
+
+					errStatus, ok := err.(*status.Status)
+					Expect(ok).To(BeTrue())
+					Expect(errStatus.Code()).To(Equal(data.expect.errStatus))
 				} else {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			},
 
-			Entry("Valid use case", &data{
+			Entry("is correctly executed", &data{
 				setup: setup{},
 				action: action{
 					&driver.GetMachineStatusRequest{
@@ -200,6 +242,21 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: false,
+				},
+			}),
+
+			Entry("contains no provider ID", &data{
+				setup: setup{},
+				action: action{
+					&driver.GetMachineStatusRequest{
+						Machine:      mock.NewMachine(-1),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.NotFound,
 				},
 			}),
 		)
@@ -215,7 +272,7 @@ var _ = Describe("MachineController", func() {
 
 		type expect struct {
 			errToHaveOccurred bool
-			errList           []error
+			errStatus         codes.Code
 		}
 
 		type data struct {
@@ -231,13 +288,16 @@ var _ = Describe("MachineController", func() {
 
 				if data.expect.errToHaveOccurred {
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(data.expect.errList))
+
+					errStatus, ok := err.(*status.Status)
+					Expect(ok).To(BeTrue())
+					Expect(errStatus.Code()).To(Equal(data.expect.errStatus))
 				} else {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			},
 
-			Entry("Valid use case", &data{
+			Entry("is correctly executed", &data{
 				setup: setup{},
 				action: action{
 					&driver.ListMachinesRequest{
@@ -250,5 +310,47 @@ var _ = Describe("MachineController", func() {
 				},
 			}),
 		)
+	})
+
+	Describe("#GetVolumeIDs", func() {
+		It("is not implemented", func() {
+			ctx := context.Background()
+
+			req := &driver.GetVolumeIDsRequest{
+				PVSpecs: []*corev1.PersistentVolumeSpec{
+					{
+						Capacity:                      map[corev1.ResourceName]resource.Quantity{},
+						PersistentVolumeSource:        corev1.PersistentVolumeSource{},
+						AccessModes:                   []corev1.PersistentVolumeAccessMode{},
+						ClaimRef:                      &corev1.ObjectReference{},
+						PersistentVolumeReclaimPolicy: "",
+						StorageClassName:              "",
+						MountOptions:                  []string{},
+						NodeAffinity:                  &corev1.VolumeNodeAffinity{},
+					},
+				},
+			}
+
+			_, err := provider.GetVolumeIDs(ctx, req)
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unimplemented))
+		})
+	})
+
+	Describe("#GenerateMachineClassForMigration", func() {
+		It("is not implemented", func() {
+			ctx := context.Background()
+			req := &driver.GenerateMachineClassForMigrationRequest{}
+
+			_, err := provider.GenerateMachineClassForMigration(ctx, req)
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unimplemented))
+		})
 	})
 })
