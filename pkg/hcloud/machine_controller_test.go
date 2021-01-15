@@ -52,6 +52,7 @@ var _ = Describe("MachineController", func() {
 		api.SetClientForToken("dummy-token", mockTestEnv.Client)
 		mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupServersEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupServer42EndpointOnMux(mockTestEnv.Mux)
 		mock.SetupSshKeysEndpointOnMux(mockTestEnv.Mux)
 	})
 
@@ -85,10 +86,10 @@ var _ = Describe("MachineController", func() {
 				_, err := provider.CreateMachine(ctx, data.action.machineRequest)
 
 				if data.expect.errToHaveOccurred {
-					Expect(err).NotTo(BeNil())
+					Expect(err).To(HaveOccurred())
 					Expect(err).To(Equal(data.expect.errList))
 				} else {
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 				}
 			},
 
@@ -97,6 +98,149 @@ var _ = Describe("MachineController", func() {
 				action: action{
 					&driver.CreateMachineRequest{
 						Machine:      mock.NewMachine(-1),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: false,
+				},
+			}),
+		)
+	})
+
+	Describe("#DeleteMachine", func() {
+		type setup struct {
+		}
+
+		type action struct {
+			machineRequest *driver.DeleteMachineRequest
+		}
+
+		type expect struct {
+			errToHaveOccurred bool
+			errList           []error
+		}
+
+		type data struct {
+			setup  setup
+			action action
+			expect expect
+		}
+
+		DescribeTable("##table",
+			func(data *data) {
+				ctx := context.Background()
+				_, err := provider.DeleteMachine(ctx, data.action.machineRequest)
+
+				if data.expect.errToHaveOccurred {
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(Equal(data.expect.errList))
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			},
+
+			Entry("Valid use case", &data{
+				setup: setup{},
+				action: action{
+					&driver.DeleteMachineRequest{
+						Machine:      mock.NewMachine(42),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: false,
+				},
+			}),
+		)
+	})
+
+	Describe("#GetMachineStatus", func() {
+		type setup struct {
+		}
+
+		type action struct {
+			machineRequest *driver.GetMachineStatusRequest
+		}
+
+		type expect struct {
+			errToHaveOccurred bool
+			errList           []error
+		}
+
+		type data struct {
+			setup  setup
+			action action
+			expect expect
+		}
+
+		DescribeTable("##table",
+			func(data *data) {
+				ctx := context.Background()
+				_, err := provider.GetMachineStatus(ctx, data.action.machineRequest)
+
+				if data.expect.errToHaveOccurred {
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(Equal(data.expect.errList))
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			},
+
+			Entry("Valid use case", &data{
+				setup: setup{},
+				action: action{
+					&driver.GetMachineStatusRequest{
+						Machine:      mock.NewMachine(42),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: false,
+				},
+			}),
+		)
+	})
+
+	Describe("#ListMachines", func() {
+		type setup struct {
+		}
+
+		type action struct {
+			machineRequest *driver.ListMachinesRequest
+		}
+
+		type expect struct {
+			errToHaveOccurred bool
+			errList           []error
+		}
+
+		type data struct {
+			setup  setup
+			action action
+			expect expect
+		}
+
+		DescribeTable("##table",
+			func(data *data) {
+				ctx := context.Background()
+				_, err := provider.ListMachines(ctx, data.action.machineRequest)
+
+				if data.expect.errToHaveOccurred {
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(Equal(data.expect.errList))
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			},
+
+			Entry("Valid use case", &data{
+				setup: setup{},
+				action: action{
+					&driver.ListMachinesRequest{
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},

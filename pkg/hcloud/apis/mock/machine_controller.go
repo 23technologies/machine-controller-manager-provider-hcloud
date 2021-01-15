@@ -53,14 +53,119 @@ const (
 	"labels": {}
 }
 	`
+	jsonServerDataTemplate = `
+{
+	"id": %d,
+	"name": "%s",
+	"status": "%s",
+	"created": "2016-01-30T23:50:00+00:00",
+	"public_net": {
+		"ipv4": {
+			"ip": "1.2.3.4",
+			"blocked": false,
+			"dns_ptr": "server01.test.invalid"
+		},
+		"ipv6": {
+			"ip": "2001:db8::/64",
+			"blocked": false,
+			"dns_ptr": [
+				{
+					"ip": "2001:db8::1",
+					"dns_ptr": "server01.test.invalid"
+				}
+			]
+		},
+		"floating_ips": [ 42 ]
+	},
+	"private_net": [
+		{
+			"network": 1,
+			"ip": "10.0.0.2",
+			"alias_ips": [],
+			"mac_address": "aa:bb:cc:dd:ee:ff"
+		}
+	],
+	"server_type": {
+		"id": 1,
+		"name": "%s",
+		"description": "Test",
+		"cores": 1,
+		"memory": 1,
+		"disk": 25,
+		"deprecated": true,
+		"prices": [
+			{
+				"location": "hel1",
+				"price_hourly": {
+					"net": "1.0000000000",
+					"gross": "1.1900000000000000"
+				},
+				"price_monthly": {
+					"net": "1.0000000000",
+					"gross": "1.1900000000000000"
+				}
+			}
+		],
+		"storage_type": "local",
+		"cpu_type": "shared"
+	},
+	"datacenter": {
+		"id": 1,
+		"name": "%s",
+		"description": "Test",
+		"location": {
+			"id": 2,
+			"name": "hel1",
+			"description": "Helsinki DC 2",
+			"country": "FI",
+			"city": "Helsinki",
+			"latitude": 60.1698,
+			"longitude": 24.9386,
+			"network_zone": "eu-central"
+		},
+		"server_types": {
+			"supported": [ 1, 2, 3 ],
+			"available": [ 1, 2, 3 ],
+			"available_for_migration": [ 1, 2, 3 ]
+		}
+	},
+	"image": %s,
+	"iso": {
+		"id": 42,
+		"name": "netboot",
+		"description": "netboot ISO",
+		"type": "public",
+		"deprecated": "2018-02-28T00:00:00+00:00"
+	},
+	"rescue_enabled": false,
+	"locked": false,
+	"backup_window": "22-02",
+	"outgoing_traffic": 123456,
+	"ingoing_traffic": 123456,
+	"included_traffic": 654321,
+	"protection": {
+		"delete": false,
+		"rebuild": false
+	},
+	"labels": {},
+	"volumes": [],
+	"load_balancers": []
+}
+	`
 	TestNamespace = "test"
+	TestServerNameTemplate = "machine-%d"
+	testServersLabelSelector = "mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=hel1-dc2"
 )
 
-func NewMachine(setMachineIndex int) *v1alpha1.Machine {
+// NewMachine generates new v1alpha1 machine data for testing purposes.
+//
+// PARAMETERS
+// serverID int Server ID to use for machine specification
+func NewMachine(serverID int) *v1alpha1.Machine {
 	index := 0
 
-	if setMachineIndex > 0 {
-		index = setMachineIndex
+	if serverID > 0 {
+		index = serverID
 	}
 
 	machine := &v1alpha1.Machine{
@@ -69,28 +174,33 @@ func NewMachine(setMachineIndex int) *v1alpha1.Machine {
 			Kind:       "Machine",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("machine-%d", index),
+			Name:      fmt.Sprintf(TestServerNameTemplate, index),
 			Namespace: TestNamespace,
 		},
 	}
 
-	// Don't initialize providerID and node if setMachineIndex == -1
-	if setMachineIndex != -1 {
+	// Don't initialize providerID and node if serverID == -1
+	if serverID != -1 {
 		machine.Spec = v1alpha1.MachineSpec{
-			ProviderID: fmt.Sprintf("hcloud:///%s/i-0123456789-%d", TestProviderSpecDatacenter, setMachineIndex),
+			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestProviderSpecDatacenter, serverID),
 		}
 		machine.Status = v1alpha1.MachineStatus{
-			Node: fmt.Sprintf("ip-%d", setMachineIndex),
+			Node: fmt.Sprintf("ip-%d", serverID),
 		}
 	}
 
 	return machine
 }
 
+// NewMachineClass generates new v1alpha1 machine class data for testing purposes.
 func NewMachineClass() *v1alpha1.MachineClass {
 	return NewMachineClassWithProviderSpec([]byte(TestProviderSpec))
 }
 
+// NewMachineClassWithProviderSpec generates new v1alpha1 machine class data based on the given provider specification for testing purposes.
+//
+// PARAMETERS
+// providerSpec []byte ProviderSpec to use
 func NewMachineClassWithProviderSpec(providerSpec []byte) *v1alpha1.MachineClass {
 	return &v1alpha1.MachineClass{
 		ProviderSpec: runtime.RawExtension{
@@ -99,6 +209,20 @@ func NewMachineClassWithProviderSpec(providerSpec []byte) *v1alpha1.MachineClass
 	}
 }
 
+// newJsonServerData generates a JSON server data object for testing purposes.
+//
+// PARAMETERS
+// serverID    int    Server ID to use
+// serverState string Server state to use
+func newJsonServerData(serverID int, serverState string) string {
+	testServerName := fmt.Sprintf(TestServerNameTemplate, serverID)
+	return fmt.Sprintf(jsonServerDataTemplate, serverID, testServerName, serverState, TestProviderSpecServerType, TestProviderSpecDatacenter, jsonImageData)
+}
+
+// SetupImagesEndpointOnMux configures a "/images" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
 func SetupImagesEndpointOnMux(mux *http.ServeMux) {
 	mux.HandleFunc("/images", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
@@ -123,155 +247,79 @@ func SetupImagesEndpointOnMux(mux *http.ServeMux) {
 	})
 }
 
-func SetupServersEndpointOnMux(mux *http.ServeMux) {
-	mux.HandleFunc("/servers", func(res http.ResponseWriter, req *http.Request) {
-		var (
-			data map[string]interface{}
-		)
-
+// SetupServer42EndpointOnMux configures a "/servers/42" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
+func SetupServer42EndpointOnMux(mux *http.ServeMux) {
+	mux.HandleFunc("/servers/42", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
-		if (strings.ToLower(req.Method) == "post") {
+		if (strings.ToLower(req.Method) == "delete") {
+			res.WriteHeader(http.StatusOK)
+			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(42, "shutdown_server"))))
+		} else if (strings.ToLower(req.Method) == "get") {
+			res.WriteHeader(http.StatusOK)
+			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(42, "running"))))
+		} else {
+			panic("Unsupported HTTP method call")
+		}
+	})
+}
+
+// SetupServersEndpointOnMux configures a "/servers" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
+func SetupServersEndpointOnMux(mux *http.ServeMux) {
+	mux.HandleFunc("/servers", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if (strings.ToLower(req.Method) == "get") {
+			res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+			res.WriteHeader(http.StatusOK)
+
+			res.Write([]byte(`
+{
+	"servers": [
+			`))
+
+			queryParams := req.URL.Query()
+
+			if (queryParams.Get("label_selector") == testServersLabelSelector) {
+				res.Write([]byte(newJsonServerData(42, "running")))
+			}
+
+			res.Write([]byte(`
+	]
+}
+			`))
+		} else if (strings.ToLower(req.Method) == "post") {
 			res.WriteHeader(http.StatusCreated)
 
 			jsonData := make([]byte, req.ContentLength)
 			req.Body.Read(jsonData)
+
+			var data map[string]interface{}
 
 			jsonErr := json.Unmarshal(jsonData, &data)
 			if jsonErr != nil {
 				panic(jsonErr)
 			}
 
-			res.Write([]byte(fmt.Sprintf(`
-{
-	"server": {
-		"id": 42,
-		"name": "%s",
-		"status": "initializing",
-		"created": "2016-01-30T23:50:00+00:00",
-		"public_net": {
-			"ipv4": {
-				"ip": "1.2.3.4",
-				"blocked": false,
-				"dns_ptr": "server01.test.invalid"
-			},
-			"ipv6": {
-				"ip": "2001:db8::/64",
-				"blocked": false,
-				"dns_ptr": [
-					{
-						"ip": "2001:db8::1",
-						"dns_ptr": "server01.test.invalid"
-					}
-				]
-			},
-			"floating_ips": [ 42 ]
-		},
-		"private_net": [
-			{
-				"network": 1,
-				"ip": "10.0.0.2",
-				"alias_ips": [],
-				"mac_address": "aa:bb:cc:dd:ee:ff"
-			}
-		],
-		"server_type": {
-			"id": 1,
-			"name": "%s",
-			"description": "Test",
-			"cores": 1,
-			"memory": 1,
-			"disk": 25,
-			"deprecated": true,
-			"prices": [
-				{
-					"location": "hel1",
-					"price_hourly": {
-						"net": "1.0000000000",
-						"gross": "1.1900000000000000"
-					},
-					"price_monthly": {
-						"net": "1.0000000000",
-						"gross": "1.1900000000000000"
-					}
-				}
-			],
-			"storage_type": "local",
-			"cpu_type": "shared"
-		},
-		"datacenter": {
-			"id": 1,
-			"name": "%s",
-			"description": "Test",
-			"location": {
-				"id": 2,
-				"name": "hel1",
-				"description": "Helsinki DC 2",
-				"country": "FI",
-				"city": "Helsinki",
-				"latitude": 60.1698,
-				"longitude": 24.9386,
-				"network_zone": "eu-central"
-			},
-			"server_types": {
-				"supported": [ 1, 2, 3 ],
-				"available": [ 1, 2, 3 ],
-				"available_for_migration": [ 1, 2, 3 ]
-			}
-		},
-		"image": %s,
-		"iso": {
-			"id": 42,
-			"name": "netboot",
-			"description": "netboot ISO",
-			"type": "public",
-			"deprecated": "2018-02-28T00:00:00+00:00"
-		},
-		"rescue_enabled": false,
-		"locked": false,
-		"backup_window": "22-02",
-		"outgoing_traffic": 123456,
-		"ingoing_traffic": 123456,
-		"included_traffic": 654321,
-		"protection": {
-			"delete": false,
-			"rebuild": false
-		},
-		"labels": {},
-		"volumes": [],
-		"load_balancers": []
-	},
-	"action": {
-		"id": 1,
-		"command": "create_server",
-		"status": "running",
-		"progress": 0,
-		"started": "2016-01-30T23:50:00+00:00",
-		"finished": null,
-		"resources": [
-			{
-				"id": 42,
-				"type": "server"
-			}
-		],
-		"error": {
-			"code": "action_failed",
-			"message": "Action failed"
-		}
-	},
-	"next_actions": [
-	],
-	"root_password": "test"
-}
-			`,
-			data["name"],
-			data["server_type"],
-			data["datacenter"],
-			jsonImageData)))
+			jsonServerData := newJsonServerData(42, "initializing")
+			res.Write([]byte(fmt.Sprintf("{ \"server\": %s, \"root_password\": \"test\" }", jsonServerData)))
+		} else {
+			panic("Unsupported HTTP method call")
 		}
 	})
 }
 
+// SetupSshKeysEndpointOnMux configures a "/ssh_keys" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
 func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 	mux.HandleFunc("/ssh_keys", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
