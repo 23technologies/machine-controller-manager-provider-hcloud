@@ -24,12 +24,14 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 )
 
+// MockTestEnv represents the test environment for testing HCloud API calls
 type MockTestEnv struct {
 	Server *httptest.Server
 	Mux    *http.ServeMux
 	Client *hcloud.Client
 }
 
+// Teardown shuts down the test environment server
 func (env *MockTestEnv) Teardown() {
 	env.Server.Close()
 
@@ -38,13 +40,7 @@ func (env *MockTestEnv) Teardown() {
 	env.Client = nil
 }
 
-// CreateMachine handles a machine creation request
-//
-// PARAMETERS
-// Machine      *v1alpha1.Machine      Machine object from whom VM is to be created
-// MachineClass *v1alpha1.MachineClass MachineClass backing the machine object
-// Secret       *corev1.Secret         Kubernetes secret that contains any sensitive data/credentials
-//
+// NewMockTestEnv generates a new, unconfigured test environment for testing purposes.
 func NewMockTestEnv() MockTestEnv {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)

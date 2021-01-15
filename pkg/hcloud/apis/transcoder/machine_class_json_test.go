@@ -41,7 +41,8 @@ var _ = Describe("Transcoder", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(providerSpec.KeyName).To(Equal("test-ssh-publickey"))
 		})
-		It("should fail of an invalid machineClass is provided", func() {
+
+		It("should fail if an invalid machineClass is provided", func() {
 			_, err := DecodeProviderSpecFromMachineClass(unsupportedMachineClass, providerSecret)
 
 			Expect(err).To(HaveOccurred())

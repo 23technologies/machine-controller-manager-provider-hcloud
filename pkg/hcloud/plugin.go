@@ -27,7 +27,10 @@ type MachineProvider struct {
 	SPI spi.SessionProviderInterface
 }
 
-// NewHCloudProvider returns an empty provider object
+// NewHCloudProvider returns a provider object.
+//
+// PARAMETERS
+// spi spi.SessionProviderInterface Session provider interface to attach
 func NewHCloudProvider(spi spi.SessionProviderInterface) driver.Driver {
 	return &MachineProvider{
 		SPI: spi,

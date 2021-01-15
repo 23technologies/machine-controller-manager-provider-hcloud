@@ -23,7 +23,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ValidateHCloudProviderSpec validates provider spec and secret to check if all fields are present and valid
+// ValidateHCloudProviderSpec validates provider specification and secret to check if all fields are present and valid
+//
+// PARAMETERS
+// spec    *api.ProviderSpec Provider specification to validate
+// secrets *corev1.Secret    Kubernetes secret that contains any sensitive data/credentials
 func ValidateHCloudProviderSpec(spec *api.ProviderSpec, secrets *corev1.Secret) []error {
 	var allErrs []error
 

@@ -23,6 +23,10 @@ import (
 
 var singletons = make(map[string]*hcloud.Client)
 
+// GetClientForToken returns an underlying HCloud client for the given token.
+//
+// PARAMETERS
+// token string Token to look up client instance for
 func GetClientForToken(token string) *hcloud.Client {
 	client, ok := singletons[token]
 
@@ -33,6 +37,11 @@ func GetClientForToken(token string) *hcloud.Client {
     return client
 }
 
+// SetClientForToken sets a preconfigured HCloud client for the given token.
+//
+// PARAMETERS
+// token  string         Token to look up client instance for
+// client *hcloud.Client Preconfigured HCloud client
 func SetClientForToken(token string, client *hcloud.Client) {
 	if client == nil {
 		delete(singletons, token)

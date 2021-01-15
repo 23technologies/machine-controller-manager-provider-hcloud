@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
@@ -29,25 +30,23 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"k8s.io/klog"
-	"strconv"
 )
 
 // CreateMachine handles a machine creation request
 //
 // PARAMETERS
-// Machine      *v1alpha1.Machine      Machine object from whom VM is to be created
-// MachineClass *v1alpha1.MachineClass MachineClass backing the machine object
-// Secret       *corev1.Secret         Kubernetes secret that contains any sensitive data/credentials
-//
+// ctx context.Context              Request context
+// req *driver.CreateMachineRequest The create request for VM creation
 func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	var (
 		machine      = req.Machine
-		secret       = req.Secret
 		machineClass = req.MachineClass
+		secret       = req.Secret
 	)
+
 	// Log messages to track request
-	klog.V(2).Infof("Machine creation request has been received for %q", req.Machine.Name)
-	defer klog.V(2).Infof("Machine creation request has been processed for %q", req.Machine.Name)
+	klog.V(2).Infof("Machine creation request has been received for %q", machine.Name)
+	defer klog.V(2).Infof("Machine creation request has been processed for %q", machine.Name)
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
 	if err != nil {
@@ -59,12 +58,10 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Internal, "userData doesn't exist")
 	}
 
-	userDataBase64Enc := base64.StdEncoding.EncodeToString([]byte(userData))
-	token := string(req.Secret.Data["token"])
-
-	client := api.GetClientForToken(token)
-
+	client := api.GetClientForToken(string(secret.Data["token"]))
 	imageName := providerSpec.ImageName
+	userDataBase64Enc := base64.StdEncoding.EncodeToString([]byte(userData))
+
 	image, _, err := client.Image.Get(ctx, imageName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -83,10 +80,12 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		}
 	}
 
+	datacenter := providerSpec.Datacenter
 	name := machine.Name
 	serverType := providerSpec.ServerType
-	labels := map[string]string{"createdby": "gardener", "test": "test"}
 	startAfterCreate := true
+
+	labels := map[string]string{ "mcm.gardener.cloud/role": "node", "topology.kubernetes.io/zone": datacenter }
 
 	opts := hcloud.ServerCreateOpts{
 		Name: name,
@@ -95,7 +94,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		},
 		Image:            image,
 		Labels:           labels,
-		Datacenter:       &hcloud.Datacenter{Name: providerSpec.Datacenter},
+		Datacenter:       &hcloud.Datacenter{Name: datacenter},
 		UserData:         userDataBase64Enc,
 		StartAfterCreate: &startAfterCreate,
 	}
@@ -103,18 +102,18 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	var sshKey *hcloud.SSHKey
 	sshKey, _, err = client.SSHKey.Get(ctx, providerSpec.KeyName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	opts.SSHKeys = append(opts.SSHKeys, sshKey)
 
 	server, _, err := client.Server.Create(ctx, opts)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
 	response := &driver.CreateMachineResponse{
-		ProviderID: strconv.Itoa(server.Server.ID),
+		ProviderID: transcoder.EncodeProviderID(providerSpec.Datacenter, server.Server.ID),
 		NodeName:   server.Server.Name,
 	}
 
@@ -123,170 +122,139 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 
 // DeleteMachine handles a machine deletion request
 //
-// REQUEST PARAMETERS (driver.DeleteMachineRequest)
-// Machine               *v1alpha1.Machine        Machine object from whom VM is to be deleted
-// MachineClass          *v1alpha1.MachineClass   MachineClass backing the machine object
-// Secret                *corev1.Secret           Kubernetes secret that contains any sensitive data/credentials
-//
-// RESPONSE PARAMETERS (driver.DeleteMachineResponse)
-// LastKnownState        bytes(blob)              (Optional) Last known state of VM during the current operation.
-//                                                Could be helpful to continue operations in future requests.
-//
+// PARAMETERS
+// ctx context.Context              Request context
+// req *driver.CreateMachineRequest The delete request for VM deletion
 func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
+	var (
+		machine      = req.Machine
+		secret       = req.Secret
+	)
+
 	// Log messages to track delete request
-	klog.V(2).Infof("Machine deletion request has been recieved for %q", req.Machine.Name)
-	defer klog.V(2).Infof("Machine deletion request has been processed for %q", req.Machine.Name)
+	klog.V(2).Infof("Machine deletion request has been received for %q", machine.Name)
+	defer klog.V(2).Infof("Machine deletion request has been processed for %q", machine.Name)
 
-	token := string(req.Secret.Data["token"])
-	client := api.GetClientForToken(token)
-
-	server, _, err := client.Server.Get(ctx, req.Machine.Spec.ProviderID)
+	serverID, err := transcoder.DecodeServerIDAsStringFromProviderID(machine.Spec.ProviderID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if server == nil {
-		klog.V(3).Infof("VM %q for Machine %q did not exist", req.Machine.Spec.ProviderID, req.Machine.Name)
+	client := api.GetClientForToken(string(secret.Data["token"]))
+
+	server, _, err := client.Server.Get(ctx, serverID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	} else if server == nil {
+		klog.V(3).Infof("VM %q for machine %q did not exist", serverID, machine.Name)
 		return &driver.DeleteMachineResponse{}, nil
 	}
 
 	_, err = client.Server.Delete(ctx, server)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
-	klog.V(3).Infof("VM %q for Machine %q was terminated succesfully", req.Machine.Spec.ProviderID, req.Machine.Name)
 	return &driver.DeleteMachineResponse{}, nil
 }
 
 // GetMachineStatus handles a machine get status request
-// OPTIONAL METHOD
 //
-// REQUEST PARAMETERS (driver.GetMachineStatusRequest)
-// Machine               *v1alpha1.Machine        Machine object from whom VM status needs to be returned
-// MachineClass          *v1alpha1.MachineClass   MachineClass backing the machine object
-// Secret                *corev1.Secret           Kubernetes secret that contains any sensitive data/credentials
-//
-// RESPONSE PARAMETERS (driver.GetMachineStatueResponse)
-// ProviderID            string                   Unique identification of the VM at the cloud provider. This could be the same/different from req.MachineName.
-//                                                ProviderID typically matches with the node.Spec.ProviderID on the node object.
-//                                                Eg: gce://project-name/region/vm-ProviderID
-// NodeName             string                    Returns the name of the node-object that the VM register's with Kubernetes.
-//                                                This could be different from req.MachineName as well
-//
-// The request should return a NOT_FOUND (5) status error code if the machine is not existing
+// PARAMETERS
+// ctx context.Context              Request context
+// req *driver.CreateMachineRequest The get request for VM info
 func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
+	var (
+		machine      = req.Machine
+		secret       = req.Secret
+	)
+
 	// Log messages to track start and end of request
-	klog.V(2).Infof("Get request has been recieved for %q", req.Machine.Name)
-	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
+	klog.V(2).Infof("Get request has been received for %q", machine.Name)
+	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", machine.Name)
 
-	token := string(req.Secret.Data["token"])
-	client := api.GetClientForToken(token)
-
-	server, _, err := client.Server.Get(ctx, req.Machine.Spec.ProviderID)
+	serverID, err := transcoder.DecodeServerIDAsStringFromProviderID(machine.Spec.ProviderID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if server == nil {
-		klog.V(3).Infof("VM %q for Machine %q did not exist", req.Machine.Spec.ProviderID, req.Machine.Name)
-		return &driver.GetMachineStatusResponse{}, status.Error(codes.NotFound, "")
+	client := api.GetClientForToken(string(secret.Data["token"]))
+
+	server, _, err := client.Server.Get(ctx, serverID)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, err.Error())
+	} else if server == nil {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("VM %q for machine %q did not exist", serverID, machine.Name))
 	}
 
-	response := &driver.GetMachineStatusResponse{
-		NodeName:   server.Name,
-		ProviderID: strconv.Itoa(server.ID),
-	}
-
-	klog.V(3).Infof("Machine get request has been processed successfully for %q", req.Machine.Name)
-	return response, nil
-	// return &driver.GetMachineStatusResponse{}, status.Error(codes.Unimplemented, "")
-
+	return &driver.GetMachineStatusResponse{ ProviderID: machine.Spec.ProviderID, NodeName: server.Name }, nil
 }
 
 // ListMachines lists all the machines possibilly created by a providerSpec
-// Identifying machines created by a given providerSpec depends on the OPTIONAL IMPLEMENTATION LOGIC
-// you have used to identify machines created by a providerSpec. It could be tags/resource-groups etc
-// OPTIONAL METHOD
 //
-// REQUEST PARAMETERS (driver.ListMachinesRequest)
-// MachineClass          *v1alpha1.MachineClass   MachineClass based on which VMs created have to be listed
-// Secret                *corev1.Secret           Kubernetes secret that contains any sensitive data/credentials
-//
-// RESPONSE PARAMETERS (driver.ListMachinesResponse)
-// MachineList           map<string,string>  A map containing the keys as the MachineID and value as the MachineName
-//                                           for all machine's who where possibilly created by this ProviderSpec
-//
+// PARAMETERS
+// ctx context.Context              Request context
+// req *driver.CreateMachineRequest The request object to get a list of VMs belonging to a machineClass
 func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
-	// Log messages to track start and end of request
-	klog.V(2).Infof("List machines request has been recieved for %q", req.MachineClass.Name)
-	defer klog.V(2).Infof("List machines request has been processed for %q", req.MachineClass.Name)
+	var (
+		machineClass = req.MachineClass
+		secret       = req.Secret
+	)
 
-	token := string(req.Secret.Data["token"])
-	client := api.GetClientForToken(token)
+	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Log messages to track start and end of request
+	klog.V(2).Infof("List machines request has been received for %q", machineClass.Name)
+	defer klog.V(2).Infof("List machines request has been processed for %q", machineClass.Name)
+
+	client := api.GetClientForToken(string(secret.Data["token"]))
+	datacenter := providerSpec.Datacenter
 
 	listopts := hcloud.ServerListOpts{
 		ListOpts: hcloud.ListOpts{
-			LabelSelector: "createdby=gardener",
+			LabelSelector: fmt.Sprintf("mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=%s", url.QueryEscape(datacenter)),
 			PerPage:       50,
 		},
 	}
+
 	servers, err := client.Server.AllWithOpts(ctx, listopts)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	}
+
 	listOfVMs := make(map[string]string)
 
 	for _, server := range servers {
-		listOfVMs[strconv.Itoa(server.ID)] = server.Name
+		listOfVMs[transcoder.EncodeProviderID(datacenter, server.ID)] = server.Name
 	}
 
-	resp := &driver.ListMachinesResponse{
-		MachineList: listOfVMs,
-	}
-
-	return resp, nil
-	// return &driver.ListMachinesResponse{}, status.Error(codes.Unimplemented, "")
+	return &driver.ListMachinesResponse{ MachineList: listOfVMs }, nil
 }
 
 // GetVolumeIDs returns a list of Volume IDs for all PV Specs for whom an provider volume was found
 //
-// REQUEST PARAMETERS (driver.GetVolumeIDsRequest)
-// PVSpecList            []*corev1.PersistentVolumeSpec       PVSpecsList is a list PV specs for whom volume-IDs are required.
-//
-// RESPONSE PARAMETERS (driver.GetVolumeIDsResponse)
-// VolumeIDs             []string                             VolumeIDs is a repeated list of VolumeIDs.
-//
+// PARAMETERS
+// ctx context.Context              Request context
+// req *driver.CreateMachineRequest The request object to get a list of VolumeIDs for a PVSpec
 func (p *MachineProvider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
-	klog.V(2).Infof("GetVolumeIDs request has been recieved for %q", req.PVSpecs)
+	klog.V(2).Infof("GetVolumeIDs request has been received for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
 
 	return &driver.GetVolumeIDsResponse{}, status.Error(codes.Unimplemented, "")
 }
 
 // GenerateMachineClassForMigration helps in migration of one kind of machineClass CR to another kind.
-// For instance an machineClass custom resource of `AWSMachineClass` to `MachineClass`.
-// Implement this functionality only if something like this is desired in your setup.
-// If you don't require this functionality leave is as is. (return Unimplemented)
 //
-// The following are the tasks typically expected out of this method
-// 1. Validate if the incoming classSpec is valid one for migration (e.g. has the right kind).
-// 2. Migrate/Copy over all the fields/spec from req.ProviderSpecificMachineClass to req.MachineClass
-// For an example refer
-//		https://github.com/prashanth26/machine-controller-manager-provider-gcp/blob/migration/pkg/gcp/machine_controller.go#L222-L233
-//
-// REQUEST PARAMETERS (driver.GenerateMachineClassForMigration)
-// ProviderSpecificMachineClass    interface{}                             ProviderSpecificMachineClass is provider specfic machine class object (E.g. AWSMachineClass). Typecasting is required here.
-// MachineClass 				   *v1alpha1.MachineClass                  MachineClass is the machine class object that is to be filled up by this method.
-// ClassSpec                       *v1alpha1.ClassSpec                     Somemore classSpec details useful while migration.
-//
-// RESPONSE PARAMETERS (driver.GenerateMachineClassForMigration)
-// NONE
-//
+// PARAMETERS
+// ctx context.Context              Request context
+// req *driver.CreateMachineRequest The request for generating the generic machineClass
 func (p *MachineProvider) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
 	// Log messages to track start and end of request
-	klog.V(2).Infof("MigrateMachineClass request has been recieved for %q", req.ClassSpec)
+	klog.V(2).Infof("MigrateMachineClass request has been received for %q", req.ClassSpec)
 	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)
 
 	return &driver.GenerateMachineClassForMigrationResponse{}, status.Error(codes.Unimplemented, "")

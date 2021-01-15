@@ -29,6 +29,7 @@ const (
 	TestProviderSpec = "{\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"datacenter\":\"hel1-dc2\",\"keyName\":\"test-ssh-publickey\"}"
 )
 
+// NewProviderSpec generates a new provider specification for testing purposes.
 func NewProviderSpec() *api.ProviderSpec {
 	return &api.ProviderSpec{
 		ImageName: TestProviderSpecImageName,
