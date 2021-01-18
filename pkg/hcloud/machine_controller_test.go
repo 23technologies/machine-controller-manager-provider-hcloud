@@ -127,6 +127,34 @@ var _ = Describe("MachineController", func() {
 					errStatus: codes.InvalidArgument,
 				},
 			}),
+			Entry("contains an invalid provider ID", &data{
+				setup: setup{},
+				action: action{
+					&driver.CreateMachineRequest{
+						Machine:      mock.ManipulateMachine(mock.NewMachine(42), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
+				},
+			}),
+			Entry("contains an invalid machine class", &data{
+				setup: setup{},
+				action: action{
+					&driver.CreateMachineRequest{
+						Machine:      mock.NewMachine(-1),
+						MachineClass: mock.NewMachineClassWithProviderSpec([]byte(mock.TestInvalidProviderSpec)),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
+				},
+			}),
 		)
 	})
 
@@ -184,6 +212,20 @@ var _ = Describe("MachineController", func() {
 				action: action{
 					&driver.DeleteMachineRequest{
 						Machine:      mock.NewMachine(-1),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
+				},
+			}),
+			Entry("contains an invalid provider ID", &data{
+				setup: setup{},
+				action: action{
+					&driver.DeleteMachineRequest{
+						Machine:      mock.ManipulateMachine(mock.NewMachine(42), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
@@ -259,6 +301,20 @@ var _ = Describe("MachineController", func() {
 					errStatus: codes.NotFound,
 				},
 			}),
+			Entry("contains an invalid provider ID", &data{
+				setup: setup{},
+				action: action{
+					&driver.GetMachineStatusRequest{
+						Machine:      mock.ManipulateMachine(mock.NewMachine(42), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
+				},
+			}),
 		)
 	})
 
@@ -307,6 +363,19 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: false,
+				},
+			}),
+			Entry("contains an invalid machine class", &data{
+				setup: setup{},
+				action: action{
+					&driver.ListMachinesRequest{
+						MachineClass: mock.NewMachineClassWithProviderSpec([]byte(mock.TestInvalidProviderSpec)),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus: codes.InvalidArgument,
 				},
 			}),
 		)

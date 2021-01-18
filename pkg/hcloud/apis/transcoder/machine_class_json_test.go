@@ -26,7 +26,7 @@ import (
 
 var _ = Describe("Transcoder", func() {
 	machineClass := mock.NewMachineClass()
-	unsupportedMachineClass := mock.NewMachineClassWithProviderSpec([]byte("{\"data\":[]}"))
+	unsupportedMachineClass := mock.NewMachineClassWithProviderSpec([]byte(mock.TestInvalidProviderSpec))
 
 	providerSecret := &corev1.Secret{
 		Data: map[string][]byte{
@@ -39,7 +39,7 @@ var _ = Describe("Transcoder", func() {
 			providerSpec, err := DecodeProviderSpecFromMachineClass(machineClass, providerSecret)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(providerSpec.KeyName).To(Equal("test-ssh-publickey"))
+			Expect(providerSpec.KeyName).To(Equal(mock.TestProviderSpecKeyName))
 		})
 
 		It("should fail if an invalid machineClass is provided", func() {

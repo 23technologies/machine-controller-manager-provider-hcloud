@@ -26,6 +26,67 @@ import (
 )
 
 var _ = Describe("ProviderID", func() {
+	Describe("#DecodeServerDataFromProviderID", func() {
+		It("should correctly parse and return decoded server information", func() {
+			serverData, err := DecodeServerDataFromProviderID(EncodeProviderID(mock.TestProviderSpecDatacenter, 42))
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(serverData.Datacenter).To(Equal(mock.TestProviderSpecDatacenter))
+			Expect(serverData.ID).To(Equal(42))
+		})
+
+		It("should fail if an unsupported provider ID scheme is provided", func() {
+			_, err := DecodeServerDataFromProviderID("invalid:///test")
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should fail if a provider ID definition contains no server ID", func() {
+			_, err := DecodeServerDataFromProviderID("hcloud:///test")
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should fail if a provider ID definition contains no datacenter", func() {
+			_, err := DecodeServerDataFromProviderID("hcloud:///1")
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should fail if a provider ID definition contains an invalid server ID", func() {
+			_, err := DecodeServerDataFromProviderID("hcloud:///test/nan")
+
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Describe("#DecodeDatacenterFromProviderID", func() {
+		It("should correctly parse and return a datacenter", func() {
+			datacenter, err := DecodeDatacenterFromProviderID(EncodeProviderID(mock.TestProviderSpecDatacenter, 42))
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(datacenter).To(Equal(mock.TestProviderSpecDatacenter))
+		})
+
+		It("should fail if an unsupported provider ID scheme is provided", func() {
+			_, err := DecodeDatacenterFromProviderID("invalid:///test")
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should fail if a provider ID definition contains no server ID", func() {
+			_, err := DecodeDatacenterFromProviderID("hcloud:///test")
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should fail if a provider ID definition contains no datacenter", func() {
+			_, err := DecodeDatacenterFromProviderID("hcloud:///1")
+
+			Expect(err).To(HaveOccurred())
+		})
+		It("should fail if a provider ID definition contains an invalid server ID", func() {
+			_, err := DecodeDatacenterFromProviderID("hcloud:///test/nan")
+
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
 	Describe("#DecodeServerIDFromProviderID", func() {
 		It("should correctly parse and return a server ID", func() {
 			serverID, err := DecodeServerIDFromProviderID(EncodeProviderID(mock.TestProviderSpecDatacenter, 42))

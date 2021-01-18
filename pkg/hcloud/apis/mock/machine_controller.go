@@ -157,6 +157,29 @@ const (
 	testServersLabelSelector = "mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=hel1-dc2"
 )
 
+// ManipulateMachine changes given machine data.
+//
+// PARAMETERS
+// machine *v1alpha1.Machine      Machine data
+// data    map[string]interface{} Members to change
+func ManipulateMachine(machine *v1alpha1.Machine, data map[string]interface{}) *v1alpha1.Machine {
+	for key, value := range data {
+		if (strings.Index(key, "ObjectMeta") == 0) {
+			manipulateStruct(&machine.ObjectMeta, key[11:], value)
+		} else if (strings.Index(key, "Spec") == 0) {
+			manipulateStruct(&machine.Spec, key[5:], value)
+		} else if (strings.Index(key, "Status") == 0) {
+			manipulateStruct(&machine.Status, key[7:], value)
+		} else if (strings.Index(key, "TypeMeta") == 0) {
+			manipulateStruct(&machine.TypeMeta, key[9:], value)
+		} else {
+			manipulateStruct(&machine, key, value)
+		}
+	}
+
+	return machine
+}
+
 // NewMachine generates new v1alpha1 machine data for testing purposes.
 //
 // PARAMETERS

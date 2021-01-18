@@ -27,7 +27,21 @@ const (
 	TestProviderSpecDatacenter = "hel1-dc2"
 	TestProviderSpecKeyName = "test-ssh-publickey"
 	TestProviderSpec = "{\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"datacenter\":\"hel1-dc2\",\"keyName\":\"test-ssh-publickey\"}"
+	TestInvalidProviderSpec = "{\"test\":\"invalid\"}"
 )
+
+// ManipulateProviderSpec changes given provider specification.
+//
+// PARAMETERS
+// providerSpec *api.ProviderSpec      Provider specification
+// data         map[string]interface{} Members to change
+func ManipulateProviderSpec(providerSpec *api.ProviderSpec, data map[string]interface{}) *api.ProviderSpec {
+	for key, value := range data {
+		manipulateStruct(&providerSpec, key, value)
+	}
+
+	return providerSpec
+}
 
 // NewProviderSpec generates a new provider specification for testing purposes.
 func NewProviderSpec() *api.ProviderSpec {

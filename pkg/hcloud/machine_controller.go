@@ -49,7 +49,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", machine.Name)
 
 	if machine.Spec.ProviderID != "" {
-		return nil, status.Error(codes.InvalidArgument, "Machine creation with existing provider Id is not supported")
+		return nil, status.Error(codes.InvalidArgument, "Machine creation with existing provider ID is not supported")
 	}
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
