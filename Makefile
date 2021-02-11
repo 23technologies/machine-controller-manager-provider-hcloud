@@ -23,14 +23,6 @@ CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
 
 #########################################
-# Rules for running helper scripts
-#########################################
-
-.PHONY: rename-project
-rename-project:
-	@./hack/rename-project ${PROJECT_NAME} ${PROVIDER_NAME}
-
-#########################################
 # Rules for starting machine-controller locally
 #########################################
 
