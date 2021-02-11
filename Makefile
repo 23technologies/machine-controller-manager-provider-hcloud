@@ -18,8 +18,8 @@ IMAGE_REPOSITORY    := <link-to-image-repo>
 IMAGE_TAG           := $(shell cat VERSION)
 PROVIDER_NAME       := SampleProvider
 PROJECT_NAME        := gardener
-CONTROL_NAMESPACE  := default
-CONTROL_KUBECONFIG := dev/target-kubeconfig.yaml
+CONTROL_NAMESPACE  := shoot--foobar--hcloud
+CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
 
 #########################################
@@ -68,9 +68,17 @@ update-dependencies:
 # Rules for testing
 #########################################
 
-.PHONY: test-unit
-test-unit:
-	.ci/test
+.PHONY: test
+test:
+	@hack/test.sh
+
+.PHONY: test-cov
+test-cov:
+	@hack/test.sh --coverage
+
+.PHONY: test-clean
+test-clean:
+	@hack/test.sh --clean --coverage
 
 #########################################
 # Rules for build/release

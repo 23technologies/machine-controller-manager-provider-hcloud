@@ -8,6 +8,23 @@ on:
     paths-ignore: 'docs/**'
 
 jobs:
+  codeql-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Set up Go
+      id: setup-go
+      uses: actions/setup-go@v2
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: go
+        queries: security-extended
+    - name: Perform CodeQL analysis
+      uses: github/codeql-action/analyze@v1
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -22,4 +39,4 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Execute tests
-      run: make test-unit
+      run: make test-cov
