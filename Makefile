@@ -14,21 +14,13 @@
 
 BINARY_PATH         := bin/
 COVERPROFILE        := test/output/coverprofile.out
-IMAGE_REPOSITORY    := <link-to-image-repo>
+IMAGE_REPOSITORY    := ghcr.io/23technologies/machine-controller-manager-provider-hcloud
 IMAGE_TAG           := $(shell cat VERSION)
-PROVIDER_NAME       := SampleProvider
-PROJECT_NAME        := gardener
-CONTROL_NAMESPACE  := shoot--foobar--hcloud
+PROVIDER_NAME       := HCloud
+PROJECT_NAME        := 23technologies
+CONTROL_NAMESPACE  := default
 CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
-
-#########################################
-# Rules for running helper scripts
-#########################################
-
-.PHONY: rename-project
-rename-project:
-	@./hack/rename-project ${PROJECT_NAME} ${PROVIDER_NAME}
 
 #########################################
 # Rules for starting machine-controller locally
