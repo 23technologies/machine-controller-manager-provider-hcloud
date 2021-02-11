@@ -16,6 +16,18 @@
 
 set -e
 
+# Argument options
+while test $# -gt 0
+do
+    case "$1" in
+        --clean) TEST_CLEANUP=true
+            ;;
+        --coverage) TEST_COVERAGE=true
+            ;;
+    esac
+    shift
+done
+
 # For the test step concourse will set the following environment variables:
 # SOURCE_PATH - path to component repository root directory.
 
@@ -34,11 +46,15 @@ fi
 # The `go <cmd>` commands requires to see the target repository to be part of a
 # Go workspace. Thus, if we are not yet in a Go workspace, let's create one
 # temporarily by using symbolic links.
-if [[ "${SOURCE_PATH}" != *"src/github.com/gardener/machine-controller-manager-provider-hcloud" ]]; then
-  SOURCE_SYMLINK_PATH="${SOURCE_PATH}/tmp/src/github.com/gardener/machine-controller-manager-provider-hcloud"
+if [[ "${SOURCE_PATH}" != *"src/github.com/23technologies/machine-controller-manager-provider-hcloud" ]]; then
+  SOURCE_SYMLINK_PATH="${SOURCE_PATH}/tmp/src/github.com/23technologies/machine-controller-manager-provider-hcloud"
+
+  if [[ -d "${SOURCE_PATH}/tmp" && $TEST_CLEANUP == true ]]; then
+    rm -rf "${SOURCE_PATH}/tmp"
+  fi
 
   if [[ ! -d "${SOURCE_PATH}/tmp" ]]; then
-    mkdir -p "${SOURCE_PATH}/tmp/src/github.com/gardener"
+    mkdir -p "${SOURCE_PATH}/tmp/src/github.com/23technologies"
     ln -s "${SOURCE_PATH}" "${SOURCE_SYMLINK_PATH}"
   fi
 
@@ -78,7 +94,13 @@ else
   echo ">>>>> Invoking unit tests"
   TEST_PACKAGES="pkg"
   GINKGO_COMMON_FLAGS="-r -timeout=1h0m0s --randomizeAllSpecs --randomizeSuites --failOnPending  --progress"
-  test_with_coverage
+
+  if [[ $TEST_COVERAGE == true ]]; then
+    test_with_coverage
+  else
+    ginkgo $GINKGO_COMMON_FLAGS ${TEST_PACKAGES}
+  fi
+
   echo ">>>>> Finished executing unit tests"
 fi
 
