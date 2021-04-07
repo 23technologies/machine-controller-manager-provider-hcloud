@@ -108,6 +108,9 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if sshKey == nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("SSH key %s not found", providerSpec.KeyName))
+	}
 
 	opts.SSHKeys = append(opts.SSHKeys, sshKey)
 
