@@ -6,12 +6,13 @@
 /test
 /logs
 
+*.html
 .vscode
 .idea
 *.DS_Store
 *amd64
-*.html
 main
 
 # Output of the go coverage tool
-*coverprofile.out*
+*coverprofile.*
+
