@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	validation "github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/validation"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/validation"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
