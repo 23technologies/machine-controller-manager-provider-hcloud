@@ -104,12 +104,12 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	var sshKey *hcloud.SSHKey
-	sshKey, _, err = client.SSHKey.Get(ctx, providerSpec.KeyName)
+	sshKey, _, err = client.SSHKey.GetByFingerprint(ctx, providerSpec.SSHFingerprint)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if sshKey == nil {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("SSH key %s not found", providerSpec.KeyName))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("SSH key with fingerprint %s not found", providerSpec.SSHFingerprint))
 	}
 
 	opts.SSHKeys = append(opts.SSHKeys, sshKey)

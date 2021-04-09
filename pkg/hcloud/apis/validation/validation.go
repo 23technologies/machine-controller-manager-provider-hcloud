@@ -40,8 +40,8 @@ func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret)
 	if "" == spec.Datacenter {
 		allErrs = append(allErrs, fmt.Errorf("datacenter is required field"))
 	}
-	if "" == spec.KeyName {
-		allErrs = append(allErrs, fmt.Errorf("sshPublicKey is required field"))
+	if "" == spec.SSHFingerprint {
+		allErrs = append(allErrs, fmt.Errorf("sshFingerprint is required field"))
 	}
 	//allErrs = append(allErrs, ValidateSecret(secret)...)
 

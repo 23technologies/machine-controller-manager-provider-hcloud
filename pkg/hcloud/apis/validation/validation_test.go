@@ -83,7 +83,7 @@ var _ = Describe("Validation", func() {
 					spec: &apis.ProviderSpec{
 						ServerType: mock.TestProviderSpecServerType,
 						Datacenter: mock.TestProviderSpecDatacenter,
-						KeyName: mock.TestProviderSpecKeyName,
+						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -100,7 +100,7 @@ var _ = Describe("Validation", func() {
 					spec: &apis.ProviderSpec{
 						ImageName: mock.TestProviderSpecImageName,
 						Datacenter: mock.TestProviderSpecDatacenter,
-						KeyName: mock.TestProviderSpecKeyName,
+						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -117,7 +117,7 @@ var _ = Describe("Validation", func() {
 					spec: &apis.ProviderSpec{
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
-						KeyName: mock.TestProviderSpecKeyName,
+						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -128,7 +128,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			}),
-			Entry("sshPublicKey field missing", &data{
+			Entry("sshFingerprint field missing", &data{
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
@@ -141,7 +141,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("sshPublicKey is required field"),
+						fmt.Errorf("sshFingerprint is required field"),
 					},
 				},
 			}),

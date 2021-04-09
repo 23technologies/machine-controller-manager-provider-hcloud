@@ -25,8 +25,8 @@ const (
 	TestProviderSpecImageName = "ubuntu-20.04"
 	TestProviderSpecServerType = "cx11-ceph"
 	TestProviderSpecDatacenter = "hel1-dc2"
-	TestProviderSpecKeyName = "test-ssh-publickey"
-	TestProviderSpec = "{\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"datacenter\":\"hel1-dc2\",\"keyName\":\"test-ssh-publickey\"}"
+	TestProviderSpecSSHFingerprint = "00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff"
+	TestProviderSpec = "{\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"datacenter\":\"hel1-dc2\",\"sshFingerprint\":\"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff\"}"
 	TestInvalidProviderSpec = "{\"test\":\"invalid\"}"
 )
 
@@ -49,6 +49,6 @@ func NewProviderSpec() *apis.ProviderSpec {
 		ImageName: TestProviderSpecImageName,
 		ServerType: TestProviderSpecServerType,
 		Datacenter: TestProviderSpecDatacenter,
-		KeyName: TestProviderSpecKeyName,
+		SSHFingerprint: TestProviderSpecSSHFingerprint,
 	}
 }

@@ -356,7 +356,7 @@ func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 	"ssh_keys": [
 		`))
 
-		if (queryParams.Get("name") == TestProviderSpecKeyName) {
+		if (queryParams.Get("fingerprint") == TestProviderSpecSSHFingerprint) {
 			res.Write([]byte(`
 {
 	"id": 42,
