@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Package api is the main package for provider specific APIs
-package api
+package apis
 
 // ProviderSpec is the spec to be used while parsing the calls.
 type ProviderSpec struct {

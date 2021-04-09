@@ -52,7 +52,7 @@ var _ = Describe("MachineController", func() {
 	var _ = BeforeEach(func() {
 		mockTestEnv = mock.NewMockTestEnv()
 
-		api.SetClientForToken("dummy-token", mockTestEnv.Client)
+		apis.SetClientForToken("dummy-token", mockTestEnv.Client)
 		mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupServersEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupServer42EndpointOnMux(mockTestEnv.Mux)
@@ -61,7 +61,7 @@ var _ = Describe("MachineController", func() {
 
 	var _ = AfterEach(func() {
 		mockTestEnv.Teardown()
-		api.SetClientForToken("dummy-token", nil)
+		apis.SetClientForToken("dummy-token", nil)
 	})
 
 	Describe("#CreateMachine", func() {

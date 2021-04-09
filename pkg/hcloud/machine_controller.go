@@ -62,7 +62,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Internal, "userData doesn't exist")
 	}
 
-	client := api.GetClientForToken(string(secret.Data["token"]))
+	client := apis.GetClientForToken(string(secret.Data["token"]))
 	imageName := providerSpec.ImageName
 	userDataBase64Enc := base64.StdEncoding.EncodeToString([]byte(userData))
 
@@ -147,7 +147,7 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	client := api.GetClientForToken(string(secret.Data["token"]))
+	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	server, _, err := client.Server.Get(ctx, serverID)
 	if err != nil {
@@ -190,7 +190,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	client := api.GetClientForToken(string(secret.Data["token"]))
+	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	server, _, err := client.Server.Get(ctx, serverID)
 	if err != nil {
@@ -222,7 +222,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 	klog.V(2).Infof("List machines request has been received for %q", machineClass.Name)
 	defer klog.V(2).Infof("List machines request has been processed for %q", machineClass.Name)
 
-	client := api.GetClientForToken(string(secret.Data["token"]))
+	client := apis.GetClientForToken(string(secret.Data["token"]))
 	datacenter := providerSpec.Datacenter
 
 	listopts := hcloud.ServerListOpts{

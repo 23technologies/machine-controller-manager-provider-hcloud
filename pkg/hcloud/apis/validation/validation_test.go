@@ -40,7 +40,7 @@ var _ = Describe("Validation", func() {
 		}
 
 		type action struct {
-			spec   *api.ProviderSpec
+			spec   *apis.ProviderSpec
 			secret *corev1.Secret
 		}
 
@@ -80,7 +80,7 @@ var _ = Describe("Validation", func() {
 			Entry("imageName field missing", &data{
 				setup: setup{},
 				action: action{
-					spec: &api.ProviderSpec{
+					spec: &apis.ProviderSpec{
 						ServerType: mock.TestProviderSpecServerType,
 						Datacenter: mock.TestProviderSpecDatacenter,
 						KeyName: mock.TestProviderSpecKeyName,
@@ -97,7 +97,7 @@ var _ = Describe("Validation", func() {
 			Entry("serverType field missing", &data{
 				setup: setup{},
 				action: action{
-					spec: &api.ProviderSpec{
+					spec: &apis.ProviderSpec{
 						ImageName: mock.TestProviderSpecImageName,
 						Datacenter: mock.TestProviderSpecDatacenter,
 						KeyName: mock.TestProviderSpecKeyName,
@@ -114,7 +114,7 @@ var _ = Describe("Validation", func() {
 			Entry("datacenter field missing", &data{
 				setup: setup{},
 				action: action{
-					spec: &api.ProviderSpec{
+					spec: &apis.ProviderSpec{
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
 						KeyName: mock.TestProviderSpecKeyName,
@@ -128,10 +128,10 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			}),
-			Entry("keyName field missing", &data{
+			Entry("sshPublicKey field missing", &data{
 				setup: setup{},
 				action: action{
-					spec: &api.ProviderSpec{
+					spec: &apis.ProviderSpec{
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
 						Datacenter: mock.TestProviderSpecDatacenter,
@@ -141,7 +141,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("keyName is required field"),
+						fmt.Errorf("sshPublicKey is required field"),
 					},
 				},
 			}),

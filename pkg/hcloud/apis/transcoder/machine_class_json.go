@@ -33,9 +33,9 @@ import (
 // PARAMETERS
 // machineClass *v1alpha1.MachineClass MachineClass backing the machine object
 // secret       *corev1.Secret         Kubernetes secret that contains any sensitive data/credentials
-func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, secret *corev1.Secret) (*api.ProviderSpec, error) {
+func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, secret *corev1.Secret) (*apis.ProviderSpec, error) {
 	// Extract providerSpec
-	var providerSpec *api.ProviderSpec
+	var providerSpec *apis.ProviderSpec
 
 	if machineClass == nil {
 		return nil, errors.New("MachineClass provided is nil")

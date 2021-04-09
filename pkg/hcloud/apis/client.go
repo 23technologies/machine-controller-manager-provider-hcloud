@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Package api is the main package for provider specific APIs
-package api
+package apis
 
 import (
 	"github.com/hetznercloud/hcloud-go/hcloud"

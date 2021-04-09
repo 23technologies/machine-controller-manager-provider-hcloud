@@ -26,9 +26,9 @@ import (
 // ValidateHCloudProviderSpec validates provider specification and secret to check if all fields are present and valid
 //
 // PARAMETERS
-// spec    *api.ProviderSpec Provider specification to validate
+// spec    *apis.ProviderSpec Provider specification to validate
 // secrets *corev1.Secret    Kubernetes secret that contains any sensitive data/credentials
-func ValidateHCloudProviderSpec(spec *api.ProviderSpec, secrets *corev1.Secret) []error {
+func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret) []error {
 	var allErrs []error
 
 	if "" == spec.ImageName {
@@ -41,7 +41,7 @@ func ValidateHCloudProviderSpec(spec *api.ProviderSpec, secrets *corev1.Secret) 
 		allErrs = append(allErrs, fmt.Errorf("datacenter is required field"))
 	}
 	if "" == spec.KeyName {
-		allErrs = append(allErrs, fmt.Errorf("keyName is required field"))
+		allErrs = append(allErrs, fmt.Errorf("sshPublicKey is required field"))
 	}
 	//allErrs = append(allErrs, ValidateSecret(secret)...)
 

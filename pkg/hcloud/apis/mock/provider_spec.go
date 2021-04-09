@@ -33,9 +33,9 @@ const (
 // ManipulateProviderSpec changes given provider specification.
 //
 // PARAMETERS
-// providerSpec *api.ProviderSpec      Provider specification
+// providerSpec *apis.ProviderSpec      Provider specification
 // data         map[string]interface{} Members to change
-func ManipulateProviderSpec(providerSpec *api.ProviderSpec, data map[string]interface{}) *api.ProviderSpec {
+func ManipulateProviderSpec(providerSpec *apis.ProviderSpec, data map[string]interface{}) *apis.ProviderSpec {
 	for key, value := range data {
 		manipulateStruct(&providerSpec, key, value)
 	}
@@ -44,8 +44,8 @@ func ManipulateProviderSpec(providerSpec *api.ProviderSpec, data map[string]inte
 }
 
 // NewProviderSpec generates a new provider specification for testing purposes.
-func NewProviderSpec() *api.ProviderSpec {
-	return &api.ProviderSpec{
+func NewProviderSpec() *apis.ProviderSpec {
+	return &apis.ProviderSpec{
 		ImageName: TestProviderSpecImageName,
 		ServerType: TestProviderSpecServerType,
 		Datacenter: TestProviderSpecDatacenter,
