@@ -18,7 +18,7 @@ IMAGE_REPOSITORY    := ghcr.io/23technologies/machine-controller-manager-provide
 IMAGE_TAG           := $(shell cat VERSION)
 PROVIDER_NAME       := HCloud
 PROJECT_NAME        := 23technologies
-CONTROL_NAMESPACE  := default
+CONTROL_NAMESPACE  := shoot--foobar--hcloud
 CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
 
@@ -30,7 +30,7 @@ TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
 start:
 	@GO111MODULE=on go run \
 			-mod=vendor \
-			cmd/machine-controller/main.go \
+			cmd/gardener-machine-controller-manager-provider-hcloud/main.go \
 			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
 			--target-kubeconfig=$(TARGET_KUBECONFIG) \
 			--namespace=$(CONTROL_NAMESPACE) \
