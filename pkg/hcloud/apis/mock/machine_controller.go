@@ -242,6 +242,24 @@ func newJsonServerData(serverID int, serverState string) string {
 	return fmt.Sprintf(jsonServerDataTemplate, serverID, testServerName, serverState, TestProviderSpecServerType, TestProviderSpecDatacenter, jsonImageData)
 }
 
+// SetupFloatingIPsEndpointOnMux configures a "/floating_ips" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
+func SetupFloatingIPsEndpointOnMux(mux *http.ServeMux) {
+	mux.HandleFunc("/floating_ips", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		res.WriteHeader(http.StatusOK)
+
+		res.Write([]byte(`
+{
+	"floating_ips": []
+}
+		`))
+	})
+}
+
 // SetupImagesEndpointOnMux configures a "/images" endpoint on the mux given.
 //
 // PARAMETERS
@@ -310,7 +328,7 @@ func SetupServersEndpointOnMux(mux *http.ServeMux) {
 
 			queryParams := req.URL.Query()
 
-			if (queryParams.Get("label_selector") == testServersLabelSelector) {
+			if (queryParams.Get("label_selector") == testServersLabelSelector || queryParams.Get("name") == fmt.Sprintf(TestServerNameTemplate, 0)) {
 				res.Write([]byte(newJsonServerData(42, "running")))
 			}
 

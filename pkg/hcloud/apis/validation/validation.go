@@ -31,14 +31,17 @@ import (
 func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret) []error {
 	var allErrs []error
 
+	if "" == spec.Cluster {
+		allErrs = append(allErrs, fmt.Errorf("cluster is required field"))
+	}
+	if "" == spec.Datacenter {
+		allErrs = append(allErrs, fmt.Errorf("datacenter is required field"))
+	}
 	if "" == spec.ImageName {
 		allErrs = append(allErrs, fmt.Errorf("imageName is required field"))
 	}
 	if "" == spec.ServerType {
 		allErrs = append(allErrs, fmt.Errorf("serverType is required field"))
-	}
-	if "" == spec.Datacenter {
-		allErrs = append(allErrs, fmt.Errorf("datacenter is required field"))
 	}
 	if "" == spec.SSHFingerprint {
 		allErrs = append(allErrs, fmt.Errorf("sshFingerprint is required field"))

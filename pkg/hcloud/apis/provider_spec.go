@@ -19,8 +19,12 @@ package apis
 
 // ProviderSpec is the spec to be used while parsing the calls.
 type ProviderSpec struct {
-	ServerType   string `json:"serverType,omitempty"`
-	ImageName    string `json:"imageName,omitempty"`
-	Datacenter   string `json:"datacenter,omitempty"`
-	SSHFingerprint string `json:"sshFingerprint,omitempty"`
+	Cluster          string `json:"cluster"`
+	Datacenter       string `json:"datacenter"`
+	ServerType       string `json:"serverType"`
+	ImageName        string `json:"imageName"`
+	SSHFingerprint   string `json:"sshFingerprint"`
+
+	NetworkName      string `json:"networkName,omitempty"`
+	FloatingPoolName string `json:"floatingPoolName,omitempty"`
 }

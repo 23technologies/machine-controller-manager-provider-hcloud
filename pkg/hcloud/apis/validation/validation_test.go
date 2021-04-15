@@ -77,12 +77,49 @@ var _ = Describe("Validation", func() {
 					errToHaveOccurred: false,
 				},
 			}),
+			Entry("cluster field missing", &data{
+				setup: setup{},
+				action: action{
+					spec: &apis.ProviderSpec{
+						Datacenter: mock.TestProviderSpecDatacenter,
+						ImageName: mock.TestProviderSpecImageName,
+						ServerType: mock.TestProviderSpecServerType,
+						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("cluster is required field"),
+					},
+				},
+			}),
+			Entry("datacenter field missing", &data{
+				setup: setup{},
+				action: action{
+					spec: &apis.ProviderSpec{
+						Cluster: mock.TestProviderSpecCluster,
+						ImageName: mock.TestProviderSpecImageName,
+						ServerType: mock.TestProviderSpecServerType,
+						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("datacenter is required field"),
+					},
+				},
+			}),
 			Entry("imageName field missing", &data{
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						ServerType: mock.TestProviderSpecServerType,
+						Cluster: mock.TestProviderSpecCluster,
 						Datacenter: mock.TestProviderSpecDatacenter,
+						ServerType: mock.TestProviderSpecServerType,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
 					secret: providerSecret,
@@ -98,8 +135,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						ImageName: mock.TestProviderSpecImageName,
+						Cluster: mock.TestProviderSpecCluster,
 						Datacenter: mock.TestProviderSpecDatacenter,
+						ImageName: mock.TestProviderSpecImageName,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
 					secret: providerSecret,
@@ -111,30 +149,14 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			}),
-			Entry("datacenter field missing", &data{
-				setup: setup{},
-				action: action{
-					spec: &apis.ProviderSpec{
-						ImageName: mock.TestProviderSpecImageName,
-						ServerType: mock.TestProviderSpecServerType,
-						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
-					},
-					secret: providerSecret,
-				},
-				expect: expect{
-					errToHaveOccurred: true,
-					errList: []error{
-						fmt.Errorf("datacenter is required field"),
-					},
-				},
-			}),
 			Entry("sshFingerprint field missing", &data{
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
+						Cluster: mock.TestProviderSpecCluster,
+						Datacenter: mock.TestProviderSpecDatacenter,
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
-						Datacenter: mock.TestProviderSpecDatacenter,
 					},
 					secret: providerSecret,
 				},
