@@ -1,15 +1,9 @@
-# machine-controller-manager-provider-hcloud
-Out of tree (controller based) implementation for `hcloud` as a new provider.
+**This Gardener Machine Controller Manager Provider is a work in progress. Code may still break at any time. DO NOT USE IT.**
 
-## About
-- This is a sample repository that provides the blueprint required to implement a new (hyperscale) provider. We call the new provider as `hcloud` for our ease.
-- Each provider implements the interface defined at [MCM OOT driver](https://github.com/gardener/machine-controller-manager/blob/master/pkg/util/provider/driver/driver.go).
+----
+# [Gardener Machine Controller Manager Provider for Hetzner Cloud](https://gardener.cloud)
 
-## Fundamental Design Principles:
-Following are the basic principles kept in mind while developing the external plugin.
-* Communication between this Machine Controller (MC) and Machine Controller Manager (MCM) is achieved using the Kubernetes native declarative approach.
-* Machine Controller (MC) behaves as the controller used to interact with the cloud provider and manage the VMs corresponding to the machine objects.
-* Machine Controller Manager (MCM) deals with higher level objects such as machine-set and machine-deployment objects.
+Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service.
+Its main principle is to leverage Kubernetes concepts for all of its tasks.
 
-## Support for a new provider
-- Steps to be followed while implementing a new provider are mentioned [here](https://github.com/gardener/machine-controller-manager/blob/master/docs/development/cp_support_new.md)
+Out of tree MCM provider implementation for Hetzner Cloud.
