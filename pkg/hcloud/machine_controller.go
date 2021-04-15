@@ -139,7 +139,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	if "" != providerSpec.FloatingPoolName {
-		name := fmt.Sprintf("%s-%d-ipv4", providerSpec.FloatingPoolName, server.ID)
+		name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
 
 		floatingIP, _, err := client.FloatingIP.GetByName(ctx, name)
 		if nil != err {
@@ -222,7 +222,7 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
-	name := fmt.Sprintf("%s-%d-ipv4", providerSpec.FloatingPoolName, server.ID)
+	name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
 
 	floatingIP, _, err := client.FloatingIP.GetByName(ctx, name)
 	if nil != err {
