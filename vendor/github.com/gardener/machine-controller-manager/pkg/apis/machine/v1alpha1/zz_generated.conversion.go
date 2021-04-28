@@ -918,7 +918,6 @@ func autoConvert_v1alpha1_AWSMachineClassSpec_To_machine_AWSMachineClassSpec(in 
 	out.Tags = *(*map[string]string)(unsafe.Pointer(&in.Tags))
 	out.SpotPrice = (*string)(unsafe.Pointer(in.SpotPrice))
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -942,7 +941,6 @@ func autoConvert_machine_AWSMachineClassSpec_To_v1alpha1_AWSMachineClassSpec(in 
 	out.Tags = *(*map[string]string)(unsafe.Pointer(&in.Tags))
 	out.SpotPrice = (*string)(unsafe.Pointer(in.SpotPrice))
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -1106,7 +1104,6 @@ func autoConvert_v1alpha1_AlicloudMachineClassSpec_To_machine_AlicloudMachineCla
 	out.Tags = *(*map[string]string)(unsafe.Pointer(&in.Tags))
 	out.KeyPairName = in.KeyPairName
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -1144,7 +1141,6 @@ func autoConvert_machine_AlicloudMachineClassSpec_To_v1alpha1_AlicloudMachineCla
 	out.Tags = *(*map[string]string)(unsafe.Pointer(&in.Tags))
 	out.KeyPairName = in.KeyPairName
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -1330,7 +1326,6 @@ func autoConvert_v1alpha1_AzureMachineClassSpec_To_machine_AzureMachineClassSpec
 		return err
 	}
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -1350,7 +1345,6 @@ func autoConvert_machine_AzureMachineClassSpec_To_v1alpha1_AzureMachineClassSpec
 		return err
 	}
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -1848,7 +1842,6 @@ func autoConvert_v1alpha1_GCPMachineClassSpec_To_machine_GCPMachineClassSpec(in 
 		return err
 	}
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	out.ServiceAccounts = *(*[]machine.GCPServiceAccount)(unsafe.Pointer(&in.ServiceAccounts))
 	out.Tags = *(*[]string)(unsafe.Pointer(&in.Tags))
 	out.Region = in.Region
@@ -1874,7 +1867,6 @@ func autoConvert_machine_GCPMachineClassSpec_To_v1alpha1_GCPMachineClassSpec(in 
 		return err
 	}
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	out.ServiceAccounts = *(*[]GCPServiceAccount)(unsafe.Pointer(&in.ServiceAccounts))
 	out.Tags = *(*[]string)(unsafe.Pointer(&in.Tags))
 	out.Region = in.Region
@@ -2041,7 +2033,6 @@ func autoConvert_v1alpha1_MachineClass_To_machine_MachineClass(in *MachineClass,
 	out.ObjectMeta = in.ObjectMeta
 	out.ProviderSpec = in.ProviderSpec
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	out.Provider = in.Provider
 	return nil
 }
@@ -2055,7 +2046,6 @@ func autoConvert_machine_MachineClass_To_v1alpha1_MachineClass(in *machine.Machi
 	out.ObjectMeta = in.ObjectMeta
 	out.ProviderSpec = in.ProviderSpec
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	out.Provider = in.Provider
 	return nil
 }
@@ -2688,7 +2678,6 @@ func autoConvert_v1alpha1_OpenStackMachineClassSpec_To_machine_OpenStackMachineC
 	out.Networks = *(*[]machine.OpenStackNetwork)(unsafe.Pointer(&in.Networks))
 	out.SubnetID = (*string)(unsafe.Pointer(in.SubnetID))
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	out.PodNetworkCidr = in.PodNetworkCidr
 	out.RootDiskSize = in.RootDiskSize
 	out.UseConfigDrive = (*bool)(unsafe.Pointer(in.UseConfigDrive))
@@ -2714,7 +2703,6 @@ func autoConvert_machine_OpenStackMachineClassSpec_To_v1alpha1_OpenStackMachineC
 	out.Networks = *(*[]OpenStackNetwork)(unsafe.Pointer(&in.Networks))
 	out.SubnetID = (*string)(unsafe.Pointer(in.SubnetID))
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	out.PodNetworkCidr = in.PodNetworkCidr
 	out.RootDiskSize = in.RootDiskSize
 	out.UseConfigDrive = (*bool)(unsafe.Pointer(in.UseConfigDrive))
@@ -2809,7 +2797,6 @@ func autoConvert_v1alpha1_PacketMachineClassSpec_To_machine_PacketMachineClassSp
 	out.SSHKeys = *(*[]string)(unsafe.Pointer(&in.SSHKeys))
 	out.UserData = in.UserData
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
@@ -2828,7 +2815,6 @@ func autoConvert_machine_PacketMachineClassSpec_To_v1alpha1_PacketMachineClassSp
 	out.SSHKeys = *(*[]string)(unsafe.Pointer(&in.SSHKeys))
 	out.UserData = in.UserData
 	out.SecretRef = (*v1.SecretReference)(unsafe.Pointer(in.SecretRef))
-	out.CredentialsSecretRef = (*v1.SecretReference)(unsafe.Pointer(in.CredentialsSecretRef))
 	return nil
 }
 
