@@ -34,6 +34,9 @@ import (
 	"k8s.io/klog"
 )
 
+// Constant defaultMachineOperationInterval is the time to wait between retries
+const defaultMachineOperationInterval = 5 * time.Second
+
 // CreateMachine handles a machine creation request
 //
 // PARAMETERS
@@ -128,14 +131,17 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	server := serverResult.Server
+	repeat := server.Locked || hcloud.ServerStatusInitializing == server.Status
 
-	for repeat := true; repeat; repeat = hcloud.ServerStatusInitializing == server.Status {
-		time.Sleep(time.Second)
+	for repeat {
+		time.Sleep(defaultMachineOperationInterval)
 
 		server, _, err = client.Server.GetByName(ctx, machine.Name)
 		if nil != err {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		repeat = server.Locked || hcloud.ServerStatusInitializing == server.Status
 	}
 
 	if "" != providerSpec.FloatingPoolName {
