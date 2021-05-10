@@ -14,21 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package main provides the application's entry point
-package main
+// Package cmd provides the provider manager
+package cmd
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/cmd"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	_ "github.com/gardener/machine-controller-manager/pkg/util/client/metrics/prometheus" // for client metric registration
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/app"
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/app/options"
 	"github.com/spf13/pflag"
+	"k8s.io/component-base/cli/flag"
+	"k8s.io/component-base/logs"
 )
 
-func main() {
-	if err := cmd.RunProviderHCloudManager(pflag.CommandLine); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
+func RunProviderHCloudManager(args *pflag.FlagSet) error {
+	s := options.NewMCServer()
+	s.AddFlags(args)
+
+	flag.InitFlags()
+	logs.InitLogs()
+	defer logs.FlushLogs()
+
+	return app.Run(s, hcloud.NewHCloudProvider(&spi.PluginSPIImpl{}))
 }
