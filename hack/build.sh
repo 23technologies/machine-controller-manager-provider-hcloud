@@ -34,7 +34,7 @@ fi
 if [[ -z "${BINARY_PATH}" ]]; then
   export BINARY_PATH="${SOURCE_PATH}/bin"
 else
-  export BINARY_PATH="$(${READLINK_BIN} -f "${BINARY_PATH}")/bin"
+  export BINARY_PATH="$(${READLINK_BIN} -f "${BINARY_PATH}")"
 fi
 
 # The `go <cmd>` commands requires to see the target repository to be part of a
@@ -69,7 +69,7 @@ if [[ -z "$LOCAL_BUILD" ]]; then
   CGO_ENABLED=0 GOOS=$(go env GOOS) GOARCH=$(go env GOARCH) go build \
     -a \
     -v \
-    -o ${BINARY_PATH}/rel/machine-controller \
+    -o ${BINARY_PATH}/machine-controller \
     cmd/machine-controller-manager-provider-hcloud/main.go
 
 # If the LOCAL_BUILD environment variable is set, we simply run `go build`.
