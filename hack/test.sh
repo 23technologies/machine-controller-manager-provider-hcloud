@@ -53,10 +53,6 @@ if [[ "${SOURCE_PATH}" != *"src/github.com/23technologies/machine-controller-man
     rm -rf "${SOURCE_PATH}/tmp"
   fi
 
-  if [[ -d "${SOURCE_PATH}/tmp" && $TEST_CLEANUP == true ]]; then
-    rm -rf "${SOURCE_PATH}/tmp"
-  fi
-
   if [[ ! -d "${SOURCE_PATH}/tmp" ]]; then
     mkdir -p "${SOURCE_PATH}/tmp/src/github.com/23technologies"
     ln -s "${SOURCE_PATH}" "${SOURCE_SYMLINK_PATH}"

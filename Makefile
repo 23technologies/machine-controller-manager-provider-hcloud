@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-BINARY_PATH         := bin/
-COVERPROFILE        := test/output/coverprofile.out
-IMAGE_REPOSITORY    := ghcr.io/23technologies/machine-controller-manager-provider-hcloud
-IMAGE_TAG           := $(shell cat VERSION)
-PROVIDER_NAME       := HCloud
-PROJECT_NAME        := 23technologies
+BINARY_PATH        := bin/
+COVERPROFILE       := test/output/coverprofile.out
+PROVIDER_NAME      := HCloud
+VERSION            := $(shell cat "${REPO_ROOT}/VERSION")
+LD_FLAGS           := "-w -X github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/version.Version=${VERSION}"
 CONTROL_NAMESPACE  := shoot--foobar--hcloud
 CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
@@ -30,7 +29,8 @@ TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
 start:
 	@GO111MODULE=on go run \
 			-mod=vendor \
-			cmd/gardener-machine-controller-manager-provider-hcloud/main.go \
+		    -ldflags ${LD_FLAGS} \
+			cmd/machine-controller-manager-provider-hcloud/main.go \
 			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
 			--target-kubeconfig=$(TARGET_KUBECONFIG) \
 			--namespace=$(CONTROL_NAMESPACE) \
@@ -49,8 +49,8 @@ start:
 
 .PHONY: revendor
 revendor:
-	@env GO111MODULE=on go mod vendor -v
-	@env GO111MODULE=on go mod tidy -v
+	@env GO111MODULE=on go mod vendor
+	@env GO111MODULE=on go mod tidy
 
 .PHONY: update-dependencies
 update-dependencies:
@@ -76,37 +76,14 @@ test-clean:
 # Rules for build/release
 #########################################
 
-.PHONY: release
-release: build-local build docker-image docker-login docker-push rename-binaries
-
 .PHONY: build-local
 build-local:
-	@env LOCAL_BUILD=1 .ci/build
+	@env LD_FLAGS=${LD_FLAGS} LOCAL_BUILD=1 hack/build.sh
 
 .PHONY: build
 build:
-	@.ci/build
-
-.PHONY: docker-image
-docker-image:
-	@docker build -t $(IMAGE_REPOSITORY):$(IMAGE_TAG) .
-
-.PHONY: docker-login
-docker-login:
-	@gcloud auth login
-
-.PHONY: docker-push
-docker-push:
-	@if ! docker images $(IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
-	@gcloud docker -- push $(IMAGE_REPOSITORY):$(IMAGE_TAG)
-
-.PHONY: rename-binaries
-rename-binaries:
-	@if [[ -f bin/machine-controller ]]; then cp bin/machine-controller machine-controller-darwin-amd64; fi
-	@if [[ -f bin/rel/machine-controller ]]; then cp bin/rel/machine-controller machine-controller-linux-amd64; fi
+	@env LD_FLAGS=${LD_FLAGS} hack/build.sh
 
 .PHONY: clean
 clean:
 	@rm -rf bin/
-	@rm -f *linux-amd64
-	@rm -f *darwin-amd64

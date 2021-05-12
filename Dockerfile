@@ -4,7 +4,7 @@ FROM golang:1.13.5 AS builder
 WORKDIR /go/src/github.com/23technologies/machine-controller-manager-provider-hcloud
 COPY . .
 
-RUN .ci/build
+RUN ./hack/build.sh
 
 #############      base                                     #############
 FROM alpine:3.11.2 as base
