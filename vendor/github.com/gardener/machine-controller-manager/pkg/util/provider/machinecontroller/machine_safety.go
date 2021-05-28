@@ -104,7 +104,7 @@ func (c *controller) reconcileClusterMachineSafetyAPIServer(key string) error {
 						return err
 					}
 
-					klog.V(2).Info("SafetyController: Reinitializing machine health check for ", machine.Name)
+					klog.V(2).Infof("SafetyController: Reinitializing machine health check for machine: %q with backing node: %q and providerID: %q", machine.Name, getNodeName(machine), getProviderID(machine))
 				}
 
 				// En-queue after 30 seconds, to ensure all machine states are reconciled
@@ -170,10 +170,7 @@ func (c *controller) checkMachineClasses() (machineutils.RetryPeriod, error) {
 	}
 
 	for _, machineClass := range MachineClasses {
-		retry, err := c.checkMachineClass(
-			machineClass,
-			machineClass.SecretRef,
-		)
+		retry, err := c.checkMachineClass(machineClass)
 		if err != nil {
 			return retry, err
 		}
@@ -183,20 +180,18 @@ func (c *controller) checkMachineClasses() (machineutils.RetryPeriod, error) {
 }
 
 // checkMachineClass checks a particular machineClass for orphan instances
-func (c *controller) checkMachineClass(
-	machineClass *v1alpha1.MachineClass,
-	secretRef *corev1.SecretReference) (machineutils.RetryPeriod, error) {
+func (c *controller) checkMachineClass(machineClass *v1alpha1.MachineClass) (machineutils.RetryPeriod, error) {
 
-	// Get secret
-	secret, err := c.getSecret(secretRef, machineClass.Name)
-	if err != nil || secret == nil {
-		klog.Errorf("SafetyController: Secret reference not found for MachineClass: %q", machineClass.Name)
+	// Get secret data
+	secretData, err := c.getSecretData(machineClass.Name, machineClass.SecretRef, machineClass.CredentialsSecretRef)
+	if err != nil {
+		klog.Errorf("SafetyController: Secret Data could not be computed for MachineClass: %q", machineClass.Name)
 		return machineutils.LongRetry, err
 	}
 
 	listMachineResponse, err := c.driver.ListMachines(context.TODO(), &driver.ListMachinesRequest{
 		MachineClass: machineClass,
-		Secret:       secret,
+		Secret:       &corev1.Secret{Data: secretData},
 	})
 	if err != nil {
 		klog.Errorf("SafetyController: Failed to LIST VMs at provider. Error: %s", err)
@@ -224,8 +219,8 @@ func (c *controller) checkMachineClass(
 
 			// If machine exists and machine object is still been processed by the machine controller
 			if err == nil &&
-				machine.Status.CurrentStatus.Phase == "" {
-				klog.V(3).Infof("SafetyController: Machine object %q is being processed by machine controller, hence skipping", machine.Name)
+				(machine.Status.CurrentStatus.Phase == "" || machine.Status.CurrentStatus.Phase == v1alpha1.MachineCrashLoopBackOff) {
+				klog.V(3).Infof("SafetyController: Machine object %q with backing nodeName %q , providerID %q is being processed by machine controller, hence skipping", machine.Name, getNodeName(machine), getProviderID(machine))
 				continue
 			}
 
@@ -242,7 +237,7 @@ func (c *controller) checkMachineClass(
 			_, err := c.driver.DeleteMachine(context.TODO(), &driver.DeleteMachineRequest{
 				Machine:      machine,
 				MachineClass: machineClass,
-				Secret:       secret,
+				Secret:       &corev1.Secret{Data: secretData},
 			})
 			if err != nil {
 				klog.Errorf("SafetyController: Error while trying to DELETE VM on CP - %s. Shall retry in next safety controller sync.", err)

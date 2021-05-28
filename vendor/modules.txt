@@ -6,7 +6,7 @@ github.com/davecgh/go-spew/spew
 github.com/evanphx/json-patch
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/gardener/machine-controller-manager v0.36.0 => github.com/gardener/machine-controller-manager v0.35.0
+# github.com/gardener/machine-controller-manager v0.39.0 => github.com/gardener/machine-controller-manager v0.39.0
 ## explicit
 github.com/gardener/machine-controller-manager/pkg/apis/machine
 github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1
@@ -41,16 +41,15 @@ github.com/gardener/machine-controller-manager/pkg/util/provider/machinecontroll
 github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils
 github.com/gardener/machine-controller-manager/pkg/util/provider/metrics
 github.com/gardener/machine-controller-manager/pkg/util/provider/options
-github.com/gardener/machine-controller-manager/pkg/util/reflector/prometheus
 github.com/gardener/machine-controller-manager/pkg/util/strings
 github.com/gardener/machine-controller-manager/pkg/util/taints
-github.com/gardener/machine-controller-manager/pkg/util/workqueue/prometheus
+github.com/gardener/machine-controller-manager/pkg/util/time
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/groupcache v0.0.0-20180513044358-24b0969c4cb7
 github.com/golang/groupcache/lru
-# github.com/golang/protobuf v1.4.2
+# github.com/golang/protobuf v1.4.3
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
@@ -85,13 +84,13 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/nxadm/tail v1.4.4
+# github.com/nxadm/tail v1.4.8
 github.com/nxadm/tail
 github.com/nxadm/tail/ratelimiter
 github.com/nxadm/tail/util
 github.com/nxadm/tail/watch
 github.com/nxadm/tail/winfile
-# github.com/onsi/ginkgo v1.14.2
+# github.com/onsi/ginkgo v1.15.2
 ## explicit
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
@@ -113,7 +112,7 @@ github.com/onsi/ginkgo/reporters/stenographer
 github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
-# github.com/onsi/gomega v1.10.5
+# github.com/onsi/gomega v1.11.0
 ## explicit
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -159,7 +158,7 @@ golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
+# golang.org/x/sys v0.0.0-20210112080510-489259a85091
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -229,7 +228,7 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/inf.v0
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
-# gopkg.in/yaml.v2 v2.3.0
+# gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
 # k8s.io/api v0.20.6 => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 ## explicit
@@ -538,7 +537,7 @@ k8s.io/utils/integer
 k8s.io/utils/trace
 # sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
-# github.com/gardener/machine-controller-manager => github.com/gardener/machine-controller-manager v0.35.0
+# github.com/gardener/machine-controller-manager => github.com/gardener/machine-controller-manager v0.39.0
 # github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.2.0
 # k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 # k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655

@@ -1,4 +1,4 @@
-**This Gardener Machine Controller Manager Provider is a work in progress. Code may still break at any time. DO NOT USE IT.**
+**This Gardener Machine Controller Manager Provider is a work in progress. Code may still break at any time. Use at your own risk.**
 
 ----
 # [Gardener Machine Controller Manager Provider for Hetzner Cloud](https://gardener.cloud)
