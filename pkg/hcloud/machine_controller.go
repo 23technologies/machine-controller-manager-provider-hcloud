@@ -93,7 +93,11 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	datacenter := providerSpec.Datacenter
 	startAfterCreate := false
 
-	labels := map[string]string{ "mcm.gardener.cloud/role": "node", "topology.kubernetes.io/zone": datacenter }
+	labels := map[string]string{
+		"mcm.gardener.cloud/cluster": providerSpec.Cluster,
+		"mcm.gardener.cloud/role": "node",
+		"topology.kubernetes.io/zone": datacenter,
+	}
 
 	opts := hcloud.ServerCreateOpts{
 		Name:             machine.Name,
@@ -305,7 +309,11 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 
 	listopts := hcloud.ServerListOpts{
 		ListOpts: hcloud.ListOpts{
-			LabelSelector: fmt.Sprintf("mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=%s", url.QueryEscape(datacenter)),
+			LabelSelector: fmt.Sprintf(
+				"mcm.gardener.cloud/cluster=%s,mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=%s",
+				url.QueryEscape(providerSpec.Cluster),
+				url.QueryEscape(datacenter),
+			),
 			PerPage:       50,
 		},
 	}
