@@ -34,8 +34,8 @@ func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret)
 	if "" == spec.Cluster {
 		allErrs = append(allErrs, fmt.Errorf("cluster is required field"))
 	}
-	if "" == spec.Datacenter {
-		allErrs = append(allErrs, fmt.Errorf("datacenter is required field"))
+	if "" == spec.Zone {
+		allErrs = append(allErrs, fmt.Errorf("zone is required field"))
 	}
 	if "" == spec.ImageName {
 		allErrs = append(allErrs, fmt.Errorf("imageName is required field"))

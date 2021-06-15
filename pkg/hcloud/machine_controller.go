@@ -22,7 +22,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
@@ -90,13 +89,15 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		}
 	}
 
-	datacenter := providerSpec.Datacenter
+	region := apis.GetRegionFromZone(providerSpec.Zone)
 	startAfterCreate := false
+	zone := providerSpec.Zone
 
 	labels := map[string]string{
 		"mcm.gardener.cloud/cluster": providerSpec.Cluster,
 		"mcm.gardener.cloud/role": "node",
-		"topology.kubernetes.io/zone": datacenter,
+		"topology.kubernetes.io/region": region,
+		"topology.kubernetes.io/zone": zone,
 	}
 
 	opts := hcloud.ServerCreateOpts{
@@ -104,7 +105,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		ServerType:       &hcloud.ServerType{Name: providerSpec.ServerType},
 		Image:            image,
 		Labels:           labels,
-		Datacenter:       &hcloud.Datacenter{Name: datacenter},
+		Datacenter:       &hcloud.Datacenter{Name: zone},
 		UserData:         userDataBase64Enc,
 		StartAfterCreate: &startAfterCreate,
 	}
@@ -155,11 +156,6 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		if nil != err {
 			return nil, status.Error(codes.Internal, err.Error())
 		} else if floatingIP == nil {
-			datacenterData := strings.SplitN(datacenter, "-", 2)
-			if len(datacenterData) != 2 {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("Region has invalid format"))
-			}
-
 			labels := map[string]string{ "networking.hcloud.mcm.gardener.cloud/floating-pool": providerSpec.FloatingPoolName }
 
 			opts := hcloud.FloatingIPCreateOpts{
@@ -184,7 +180,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	response := &driver.CreateMachineResponse{
-		ProviderID: transcoder.EncodeProviderID(providerSpec.Datacenter, server.ID),
+		ProviderID: transcoder.EncodeProviderID(providerSpec.Zone, server.ID),
 		NodeName:   server.Name,
 	}
 
@@ -305,14 +301,14 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 	defer klog.V(2).Infof("List machines request has been processed for %q", machineClass.Name)
 
 	client := apis.GetClientForToken(string(secret.Data["token"]))
-	datacenter := providerSpec.Datacenter
+	zone := providerSpec.Zone
 
 	listopts := hcloud.ServerListOpts{
 		ListOpts: hcloud.ListOpts{
 			LabelSelector: fmt.Sprintf(
 				"mcm.gardener.cloud/cluster=%s,mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=%s",
 				url.QueryEscape(providerSpec.Cluster),
-				url.QueryEscape(datacenter),
+				url.QueryEscape(zone),
 			),
 			PerPage:       50,
 		},
@@ -326,7 +322,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 	listOfVMs := make(map[string]string)
 
 	for _, server := range servers {
-		listOfVMs[transcoder.EncodeProviderID(datacenter, server.ID)] = server.Name
+		listOfVMs[transcoder.EncodeProviderID(zone, server.ID)] = server.Name
 	}
 
 	return &driver.ListMachinesResponse{ MachineList: listOfVMs }, nil

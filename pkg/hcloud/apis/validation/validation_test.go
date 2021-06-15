@@ -81,7 +81,7 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Datacenter: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecDatacenter,
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
@@ -95,7 +95,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			}),
-			Entry("datacenter field missing", &data{
+			Entry("zone field missing", &data{
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
@@ -109,7 +109,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("datacenter is required field"),
+						fmt.Errorf("zone is required field"),
 					},
 				},
 			}),
@@ -118,7 +118,7 @@ var _ = Describe("Validation", func() {
 				action: action{
 					spec: &apis.ProviderSpec{
 						Cluster: mock.TestProviderSpecCluster,
-						Datacenter: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecDatacenter,
 						ServerType: mock.TestProviderSpecServerType,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
@@ -136,7 +136,7 @@ var _ = Describe("Validation", func() {
 				action: action{
 					spec: &apis.ProviderSpec{
 						Cluster: mock.TestProviderSpecCluster,
-						Datacenter: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecDatacenter,
 						ImageName: mock.TestProviderSpecImageName,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
@@ -154,7 +154,7 @@ var _ = Describe("Validation", func() {
 				action: action{
 					spec: &apis.ProviderSpec{
 						Cluster: mock.TestProviderSpecCluster,
-						Datacenter: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecDatacenter,
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
 					},

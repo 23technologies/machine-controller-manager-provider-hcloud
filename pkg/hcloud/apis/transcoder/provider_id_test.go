@@ -31,7 +31,7 @@ var _ = Describe("ProviderID", func() {
 			serverData, err := DecodeServerDataFromProviderID(EncodeProviderID(mock.TestProviderSpecDatacenter, 42))
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(serverData.Datacenter).To(Equal(mock.TestProviderSpecDatacenter))
+			Expect(serverData.Zone).To(Equal(mock.TestProviderSpecDatacenter))
 			Expect(serverData.ID).To(Equal(42))
 		})
 
@@ -45,7 +45,7 @@ var _ = Describe("ProviderID", func() {
 
 			Expect(err).To(HaveOccurred())
 		})
-		It("should fail if a provider ID definition contains no datacenter", func() {
+		It("should fail if a provider ID definition contains no zone", func() {
 			_, err := DecodeServerDataFromProviderID("hcloud:///1")
 
 			Expect(err).To(HaveOccurred())
@@ -57,31 +57,31 @@ var _ = Describe("ProviderID", func() {
 		})
 	})
 
-	Describe("#DecodeDatacenterFromProviderID", func() {
-		It("should correctly parse and return a datacenter", func() {
-			datacenter, err := DecodeDatacenterFromProviderID(EncodeProviderID(mock.TestProviderSpecDatacenter, 42))
+	Describe("#DecodeZoneFromProviderID", func() {
+		It("should correctly parse and return a zone", func() {
+			zone, err := DecodeZoneFromProviderID(EncodeProviderID(mock.TestProviderSpecDatacenter, 42))
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(datacenter).To(Equal(mock.TestProviderSpecDatacenter))
+			Expect(zone).To(Equal(mock.TestProviderSpecDatacenter))
 		})
 
 		It("should fail if an unsupported provider ID scheme is provided", func() {
-			_, err := DecodeDatacenterFromProviderID("invalid:///test")
+			_, err := DecodeZoneFromProviderID("invalid:///test")
 
 			Expect(err).To(HaveOccurred())
 		})
 		It("should fail if a provider ID definition contains no server ID", func() {
-			_, err := DecodeDatacenterFromProviderID("hcloud:///test")
+			_, err := DecodeZoneFromProviderID("hcloud:///test")
 
 			Expect(err).To(HaveOccurred())
 		})
-		It("should fail if a provider ID definition contains no datacenter", func() {
-			_, err := DecodeDatacenterFromProviderID("hcloud:///1")
+		It("should fail if a provider ID definition contains no zone", func() {
+			_, err := DecodeZoneFromProviderID("hcloud:///1")
 
 			Expect(err).To(HaveOccurred())
 		})
 		It("should fail if a provider ID definition contains an invalid server ID", func() {
-			_, err := DecodeDatacenterFromProviderID("hcloud:///test/nan")
+			_, err := DecodeZoneFromProviderID("hcloud:///test/nan")
 
 			Expect(err).To(HaveOccurred())
 		})
@@ -105,7 +105,7 @@ var _ = Describe("ProviderID", func() {
 
 			Expect(err).To(HaveOccurred())
 		})
-		It("should fail if a provider ID definition contains no datacenter", func() {
+		It("should fail if a provider ID definition contains no zone", func() {
 			_, err := DecodeServerIDFromProviderID("hcloud:///1")
 
 			Expect(err).To(HaveOccurred())
@@ -135,7 +135,7 @@ var _ = Describe("ProviderID", func() {
 
 			Expect(err).To(HaveOccurred())
 		})
-		It("should fail if a provider ID definition contains no datacenter", func() {
+		It("should fail if a provider ID definition contains no zone", func() {
 			_, err := DecodeServerIDAsStringFromProviderID("hcloud:///1")
 
 			Expect(err).To(HaveOccurred())

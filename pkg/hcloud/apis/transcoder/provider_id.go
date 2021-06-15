@@ -27,8 +27,8 @@ import (
 
 // ProviderSpec is the spec to be used while parsing the calls.
 type ServerData struct {
-	Datacenter string
-	ID         int
+	Zone string
+	ID   int
 }
 
 // DecodeServerDataFromProviderID decodes the given provider ID to extract the server specific data.
@@ -54,24 +54,24 @@ func DecodeServerDataFromProviderID(providerID string) (*ServerData, error) {
 	}
 
 	response := &ServerData{
-		ID:         serverID,
-		Datacenter: providerIDData[0],
+		ID:   serverID,
+		Zone: providerIDData[0],
 	}
 
 	return response, nil
 }
 
-// DecodeDatacenterFromProviderID decodes the given ProviderID to extract the server ID.
+// DecodeZoneFromProviderID decodes the given ProviderID to extract the datacenter zone.
 //
 // PARAMETERS
 // providerID string Provider ID to parse
-func DecodeDatacenterFromProviderID(providerID string) (string, error) {
+func DecodeZoneFromProviderID(providerID string) (string, error) {
 	serverData, err := DecodeServerDataFromProviderID(providerID)
 	if err != nil {
 		return "", err
 	}
 
-	return serverData.Datacenter, nil
+	return serverData.Zone, nil
 }
 
 // DecodeServerIDFromProviderID decodes the given ProviderID to extract the server ID.
@@ -100,10 +100,10 @@ func DecodeServerIDAsStringFromProviderID(providerID string) (string, error) {
 	return strconv.Itoa(serverData.ID), nil
 }
 
-// EncodeProviderID encodes the ProviderID string based on the given datacenter and server ID.
+// EncodeProviderID encodes the ProviderID string based on the given zone and server ID.
 //
 // PARAMETERS
 // providerID string Provider ID to parse
-func EncodeProviderID(datacenter string, serverID int) string {
-	return fmt.Sprintf("hcloud:///%s/%d", url.PathEscape(datacenter), serverID)
+func EncodeProviderID(zone string, serverID int) string {
+	return fmt.Sprintf("hcloud:///%s/%d", url.PathEscape(zone), serverID)
 }
