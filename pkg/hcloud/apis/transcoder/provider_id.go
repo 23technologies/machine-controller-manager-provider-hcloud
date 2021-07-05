@@ -27,8 +27,8 @@ import (
 
 // ProviderSpec is the spec to be used while parsing the calls.
 type ServerData struct {
-	Zone string
 	ID   int
+	Zone string
 }
 
 // DecodeServerDataFromProviderID decodes the given provider ID to extract the server specific data.

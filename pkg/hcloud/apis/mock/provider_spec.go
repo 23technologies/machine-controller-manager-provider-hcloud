@@ -22,12 +22,12 @@ import (
 )
 
 const (
+	TestProviderSpec = "{\"cluster\":\"xyz\",\"zone\":\"hel1-dc2\",\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"sshFingerprint\":\"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff\"}"
 	TestProviderSpecCluster = "xyz"
-	TestProviderSpecDatacenter = "hel1-dc2"
 	TestProviderSpecImageName = "ubuntu-20.04"
 	TestProviderSpecServerType = "cx11-ceph"
 	TestProviderSpecSSHFingerprint = "00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff"
-	TestProviderSpec = "{\"cluster\":\"xyz\",\"zone\":\"hel1-dc2\",\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"sshFingerprint\":\"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff\"}"
+	TestProviderSpecZone = "hel1-dc2"
 	TestInvalidProviderSpec = "{\"test\":\"invalid\"}"
 )
 
@@ -48,7 +48,7 @@ func ManipulateProviderSpec(providerSpec *apis.ProviderSpec, data map[string]int
 func NewProviderSpec() *apis.ProviderSpec {
 	return &apis.ProviderSpec{
 		Cluster: TestProviderSpecCluster,
-		Zone: TestProviderSpecDatacenter,
+		Zone: TestProviderSpecZone,
 		ImageName: TestProviderSpecImageName,
 		ServerType: TestProviderSpecServerType,
 		SSHFingerprint: TestProviderSpecSSHFingerprint,

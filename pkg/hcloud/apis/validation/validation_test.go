@@ -81,7 +81,7 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Zone: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecZone,
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
@@ -91,7 +91,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("cluster is required field"),
+						fmt.Errorf("cluster is a required field"),
 					},
 				},
 			}),
@@ -109,7 +109,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("zone is required field"),
+						fmt.Errorf("zone is a required field"),
 					},
 				},
 			}),
@@ -118,7 +118,7 @@ var _ = Describe("Validation", func() {
 				action: action{
 					spec: &apis.ProviderSpec{
 						Cluster: mock.TestProviderSpecCluster,
-						Zone: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecZone,
 						ServerType: mock.TestProviderSpecServerType,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
@@ -127,7 +127,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("imageName is required field"),
+						fmt.Errorf("imageName is a required field"),
 					},
 				},
 			}),
@@ -136,7 +136,7 @@ var _ = Describe("Validation", func() {
 				action: action{
 					spec: &apis.ProviderSpec{
 						Cluster: mock.TestProviderSpecCluster,
-						Zone: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecZone,
 						ImageName: mock.TestProviderSpecImageName,
 						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
 					},
@@ -145,7 +145,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("serverType is required field"),
+						fmt.Errorf("serverType is a required field"),
 					},
 				},
 			}),
@@ -154,7 +154,7 @@ var _ = Describe("Validation", func() {
 				action: action{
 					spec: &apis.ProviderSpec{
 						Cluster: mock.TestProviderSpecCluster,
-						Zone: mock.TestProviderSpecDatacenter,
+						Zone: mock.TestProviderSpecZone,
 						ImageName: mock.TestProviderSpecImageName,
 						ServerType: mock.TestProviderSpecServerType,
 					},
@@ -163,7 +163,7 @@ var _ = Describe("Validation", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errList: []error{
-						fmt.Errorf("sshFingerprint is required field"),
+						fmt.Errorf("sshFingerprint is a required field"),
 					},
 				},
 			}),

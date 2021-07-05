@@ -25,6 +25,6 @@ type ProviderSpec struct {
 	ImageName        string `json:"imageName"`
 	SSHFingerprint   string `json:"sshFingerprint"`
 
-	NetworkName      string `json:"networkName,omitempty"`
 	FloatingPoolName string `json:"floatingPoolName,omitempty"`
+	NetworkName      string `json:"networkName,omitempty"`
 }

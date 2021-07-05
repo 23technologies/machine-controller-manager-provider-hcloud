@@ -205,7 +205,7 @@ func NewMachine(serverID int) *v1alpha1.Machine {
 	// Don't initialize providerID and node if serverID == -1
 	if serverID != -1 {
 		machine.Spec = v1alpha1.MachineSpec{
-			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestProviderSpecDatacenter, serverID),
+			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestProviderSpecZone, serverID),
 		}
 		machine.Status = v1alpha1.MachineStatus{
 			Node: fmt.Sprintf("ip-%d", serverID),
@@ -239,7 +239,7 @@ func NewMachineClassWithProviderSpec(providerSpec []byte) *v1alpha1.MachineClass
 // serverState string Server state to use
 func newJsonServerData(serverID int, serverState string) string {
 	testServerName := fmt.Sprintf(TestServerNameTemplate, serverID)
-	return fmt.Sprintf(jsonServerDataTemplate, serverID, testServerName, serverState, TestProviderSpecServerType, TestProviderSpecDatacenter, jsonImageData)
+	return fmt.Sprintf(jsonServerDataTemplate, serverID, testServerName, serverState, TestProviderSpecServerType, TestProviderSpecZone, jsonImageData)
 }
 
 // SetupFloatingIPsEndpointOnMux configures a "/floating_ips" endpoint on the mux given.

@@ -32,19 +32,19 @@ func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret)
 	var allErrs []error
 
 	if "" == spec.Cluster {
-		allErrs = append(allErrs, fmt.Errorf("cluster is required field"))
+		allErrs = append(allErrs, fmt.Errorf("cluster is a required field"))
 	}
 	if "" == spec.Zone {
-		allErrs = append(allErrs, fmt.Errorf("zone is required field"))
+		allErrs = append(allErrs, fmt.Errorf("zone is a required field"))
 	}
 	if "" == spec.ImageName {
-		allErrs = append(allErrs, fmt.Errorf("imageName is required field"))
+		allErrs = append(allErrs, fmt.Errorf("imageName is a required field"))
 	}
 	if "" == spec.ServerType {
-		allErrs = append(allErrs, fmt.Errorf("serverType is required field"))
+		allErrs = append(allErrs, fmt.Errorf("serverType is a required field"))
 	}
 	if "" == spec.SSHFingerprint {
-		allErrs = append(allErrs, fmt.Errorf("sshFingerprint is required field"))
+		allErrs = append(allErrs, fmt.Errorf("sshFingerprint is a required field"))
 	}
 	//allErrs = append(allErrs, ValidateSecret(secret)...)
 

@@ -227,15 +227,17 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
-	name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
+	if "" != providerSpec.FloatingPoolName {
+		name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
 
-	floatingIP, _, err := client.FloatingIP.GetByName(ctx, name)
-	if nil != err {
-		return nil, status.Error(codes.Internal, err.Error())
-	} else if nil != floatingIP {
-		_, err = client.FloatingIP.Delete(ctx, floatingIP)
+		floatingIP, _, err := client.FloatingIP.GetByName(ctx, name)
 		if nil != err {
-			return nil, status.Error(codes.Unavailable, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
+		} else if nil != floatingIP {
+			_, err = client.FloatingIP.Delete(ctx, floatingIP)
+			if nil != err {
+				return nil, status.Error(codes.Unavailable, err.Error())
+			}
 		}
 	}
 
