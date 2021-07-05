@@ -61,12 +61,12 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	client := apis.GetClientForToken(string(secret.Data["token"]))
-
 	userData, ok := secret.Data["userData"]
 	if !ok {
 		return nil, status.Error(codes.Internal, "userData doesn't exist")
 	}
+
+	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	imageName := providerSpec.ImageName
 	userDataBase64Enc := base64.StdEncoding.EncodeToString([]byte(userData))
@@ -93,18 +93,16 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	startAfterCreate := false
 	zone := providerSpec.Zone
 
-	labels := map[string]string{
-		"mcm.gardener.cloud/cluster": providerSpec.Cluster,
-		"mcm.gardener.cloud/role": "node",
-		"topology.kubernetes.io/region": region,
-		"topology.kubernetes.io/zone": zone,
-	}
-
 	opts := hcloud.ServerCreateOpts{
 		Name:             machine.Name,
 		ServerType:       &hcloud.ServerType{Name: providerSpec.ServerType},
 		Image:            image,
-		Labels:           labels,
+		Labels:           map[string]string{
+			"mcm.gardener.cloud/cluster": providerSpec.Cluster,
+			"mcm.gardener.cloud/role": "node",
+			"topology.kubernetes.io/region": region,
+			"topology.kubernetes.io/zone": zone,
+		},
 		Datacenter:       &hcloud.Datacenter{Name: zone},
 		UserData:         userDataBase64Enc,
 		StartAfterCreate: &startAfterCreate,
@@ -156,13 +154,14 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		if nil != err {
 			return nil, status.Error(codes.Internal, err.Error())
 		} else if floatingIP == nil {
-			labels := map[string]string{ "networking.hcloud.mcm.gardener.cloud/floating-pool": providerSpec.FloatingPoolName }
-
 			opts := hcloud.FloatingIPCreateOpts{
 				Name: &name,
 				Type: hcloud.FloatingIPTypeIPv4,
 				Server: server,
-				Labels: labels,
+				Labels: map[string]string{
+					"mcm.gardener.cloud/cluster": providerSpec.Cluster,
+					"networking.hcloud.mcm.gardener.cloud/floating-pool": providerSpec.FloatingPoolName,
+				},
 			}
 
 			_, _, err := client.FloatingIP.Create(ctx, opts)
