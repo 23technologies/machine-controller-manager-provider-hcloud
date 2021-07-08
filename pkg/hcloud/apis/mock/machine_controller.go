@@ -317,8 +317,6 @@ func SetupServersEndpointOnMux(mux *http.ServeMux) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
 		if (strings.ToLower(req.Method) == "get") {
-			res.Header().Add("Content-Type", "application/json; charset=utf-8")
-
 			res.WriteHeader(http.StatusOK)
 
 			res.Write([]byte(`
