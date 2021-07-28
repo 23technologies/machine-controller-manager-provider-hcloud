@@ -35,6 +35,8 @@ import (
 
 // Constant defaultMachineOperationInterval is the time to wait between retries
 const defaultMachineOperationInterval = 5 * time.Second
+// Constant defaultMachineOperationRetries is the maximum number of retries
+const defaultMachineOperationRetries = 5
 
 // CreateMachine handles a machine creation request
 //
@@ -135,6 +137,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 
 	server := serverResult.Server
 	repeat := server.Locked || hcloud.ServerStatusInitializing == server.Status
+	tryCount := 0
 
 	for repeat {
 		time.Sleep(defaultMachineOperationInterval)
@@ -145,6 +148,11 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		}
 
 		repeat = server.Locked || hcloud.ServerStatusInitializing == server.Status
+		tryCount += 1
+
+		if repeat && tryCount > defaultMachineOperationRetries {
+			return nil, status.Error(codes.InvalidArgument, "Maximum number of retries exceeded waiting for initialized server")
+		}
 	}
 
 	if "" != providerSpec.FloatingPoolName {
@@ -176,6 +184,42 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		if nil != err {
 			return nil, status.Error(codes.Aborted, err.Error())
 		}
+	}
+
+	repeat = true
+	tryCount = 0
+
+	for repeat {
+		server, _, err = client.Server.GetByName(ctx, machine.Name)
+		if nil != err {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		repeat = hcloud.ServerStatusRunning != server.Status
+		tryCount += 1
+
+		if repeat {
+			time.Sleep(defaultMachineOperationInterval)
+
+			if tryCount > defaultMachineOperationRetries {
+				return nil, status.Error(codes.InvalidArgument, "Maximum number of retries exceeded waiting for running server")
+			}
+		}
+	}
+
+	// Compare running results with expectation
+	unexpectedState := ""
+
+	if "" != providerSpec.FloatingPoolName && len(server.PublicNet.FloatingIPs) != 1 {
+		unexpectedState = "Floating IP set-up failed"
+	}
+
+	if "" != providerSpec.NetworkName && len(server.PrivateNet) != 1 {
+		unexpectedState = "Private network set-up failed"
+	}
+
+	if unexpectedState != "" {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Server state does not match expectation: %s", unexpectedState))
 	}
 
 	response := &driver.CreateMachineResponse{

@@ -347,7 +347,7 @@ func SetupServersEndpointOnMux(mux *http.ServeMux) {
 				panic(jsonErr)
 			}
 
-			jsonServerData := newJsonServerData(42, "initializing")
+			jsonServerData := newJsonServerData(42, "starting")
 			res.Write([]byte(fmt.Sprintf("{ \"server\": %s, \"root_password\": \"test\" }", jsonServerData)))
 		} else {
 			panic("Unsupported HTTP method call")
