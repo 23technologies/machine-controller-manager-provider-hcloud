@@ -306,6 +306,13 @@ func SetupServer42EndpointOnMux(mux *http.ServeMux) {
 			panic("Unsupported HTTP method call")
 		}
 	})
+
+	mux.HandleFunc("/servers/42/actions", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		res.WriteHeader(http.StatusOK)
+		res.Write([]byte("{ \"actions\": [] }"))
+	})
 }
 
 // SetupServersEndpointOnMux configures a "/servers" endpoint on the mux given.

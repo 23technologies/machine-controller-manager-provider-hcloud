@@ -22,7 +22,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
-	"time"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
@@ -32,11 +31,6 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"k8s.io/klog"
 )
-
-// Constant defaultMachineOperationInterval is the time to wait between retries
-const defaultMachineOperationInterval = 5 * time.Second
-// Constant defaultMachineOperationRetries is the maximum number of retries
-const defaultMachineOperationRetries = 5
 
 // CreateMachine handles a machine creation request
 //
@@ -135,24 +129,9 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
-	server := serverResult.Server
-	repeat := server.Locked || hcloud.ServerStatusInitializing == server.Status
-	tryCount := 0
-
-	for repeat {
-		time.Sleep(defaultMachineOperationInterval)
-
-		server, _, err = client.Server.GetByName(ctx, machine.Name)
-		if nil != err {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		repeat = server.Locked || hcloud.ServerStatusInitializing == server.Status
-		tryCount += 1
-
-		if repeat && tryCount > defaultMachineOperationRetries {
-			return nil, status.Error(codes.InvalidArgument, "Maximum number of retries exceeded waiting for initialized server")
-		}
+	server, err := apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
+	if nil != err {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if "" != providerSpec.FloatingPoolName {
@@ -172,7 +151,12 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 				},
 			}
 
-			_, _, err := client.FloatingIP.Create(ctx, opts)
+			ipResult, _, err := client.FloatingIP.Create(ctx, opts)
+			if nil != err {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+
+			_, err = apis.WaitForActionsAndGetFloatingIP(ctx, client, ipResult.FloatingIP)
 			if nil != err {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -186,25 +170,9 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		}
 	}
 
-	repeat = true
-	tryCount = 0
-
-	for repeat {
-		server, _, err = client.Server.GetByName(ctx, machine.Name)
-		if nil != err {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		repeat = hcloud.ServerStatusRunning != server.Status
-		tryCount += 1
-
-		if repeat {
-			time.Sleep(defaultMachineOperationInterval)
-
-			if tryCount > defaultMachineOperationRetries {
-				return nil, status.Error(codes.InvalidArgument, "Maximum number of retries exceeded waiting for running server")
-			}
-		}
+	server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
+	if nil != err {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// Compare running results with expectation

@@ -18,11 +18,88 @@ limitations under the License.
 package apis
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
 	"strings"
+	"time"
+
+	"github.com/hetznercloud/hcloud-go/hcloud"
+	"github.com/hetznercloud/hcloud-go/hcloud/schema"
 )
+
+// Constant defaultMachineOperationInterval is the time to wait between retries
+const defaultMachineOperationInterval = 5 * time.Second
+// Constant defaultMachineOperationRetries is the maximum number of retries
+const defaultMachineOperationRetries = 5
 
 // GetRegionFromZone returns the region for a given zone string
 func GetRegionFromZone(zone string) string {
 	zoneData := strings.SplitN(zone, "-", 2)
 	return zoneData[0]
+}
+
+func waitForActionsOfRequest(ctx context.Context, client *hcloud.Client, req *http.Request) error {
+	var body schema.ActionListResponse
+	repeat := true
+	tryCount := 0
+
+	for repeat {
+		_, err := client.Do(req, &body)
+		if err != nil {
+			return err
+		}
+
+		repeat = len(body.Actions) > 0
+		tryCount += 1
+
+		if repeat {
+			if tryCount > defaultMachineOperationRetries {
+				return errors.New("Maximum number of retries exceeded waiting for IP actions")
+			}
+
+			time.Sleep(defaultMachineOperationInterval)
+		}
+	}
+
+	return nil
+}
+
+func WaitForActionsAndGetFloatingIP(ctx context.Context, client *hcloud.Client, ip *hcloud.FloatingIP) (*hcloud.FloatingIP, error) {
+	req, err := client.NewRequest(ctx, "GET", fmt.Sprintf("/floating_ips/%d/actions?status=running", ip.ID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = waitForActionsOfRequest(ctx, client, req)
+	if nil != err {
+		return nil, err
+	}
+
+	ip, _, err = client.FloatingIP.GetByID(ctx, ip.ID)
+	if nil != err {
+		return nil, err
+	}
+
+	return ip, nil
+}
+
+func WaitForActionsAndGetServer(ctx context.Context, client *hcloud.Client, server *hcloud.Server) (*hcloud.Server, error) {
+	req, err := client.NewRequest(ctx, "GET", fmt.Sprintf("/servers/%d/actions?status=running", server.ID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = waitForActionsOfRequest(ctx, client, req)
+	if nil != err {
+		return nil, err
+	}
+
+	server, _, err = client.Server.GetByID(ctx, server.ID)
+	if nil != err {
+		return nil, err
+	}
+
+	return server, nil
 }
