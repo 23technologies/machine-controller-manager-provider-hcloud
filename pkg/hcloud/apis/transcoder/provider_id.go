@@ -61,19 +61,6 @@ func DecodeServerDataFromProviderID(providerID string) (*ServerData, error) {
 	return response, nil
 }
 
-// DecodeZoneFromProviderID decodes the given ProviderID to extract the datacenter zone.
-//
-// PARAMETERS
-// providerID string Provider ID to parse
-func DecodeZoneFromProviderID(providerID string) (string, error) {
-	serverData, err := DecodeServerDataFromProviderID(providerID)
-	if err != nil {
-		return "", err
-	}
-
-	return serverData.Zone, nil
-}
-
 // DecodeServerIDFromProviderID decodes the given ProviderID to extract the server ID.
 //
 // PARAMETERS
@@ -100,10 +87,24 @@ func DecodeServerIDAsStringFromProviderID(providerID string) (string, error) {
 	return strconv.Itoa(serverData.ID), nil
 }
 
-// EncodeProviderID encodes the ProviderID string based on the given zone and server ID.
+// DecodeZoneFromProviderID decodes the given ProviderID to extract the datacenter zone.
 //
 // PARAMETERS
 // providerID string Provider ID to parse
+func DecodeZoneFromProviderID(providerID string) (string, error) {
+	serverData, err := DecodeServerDataFromProviderID(providerID)
+	if err != nil {
+		return "", err
+	}
+
+	return serverData.Zone, nil
+}
+
+// EncodeProviderID encodes the ProviderID string based on the given zone and server ID.
+//
+// PARAMETERS
+// zone     string Datacenter zone
+// serverID string Server ID
 func EncodeProviderID(zone string, serverID int) string {
 	return fmt.Sprintf("hcloud:///%s/%d", url.PathEscape(zone), serverID)
 }

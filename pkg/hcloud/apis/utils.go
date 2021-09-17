@@ -35,11 +35,20 @@ const defaultMachineOperationInterval = 5 * time.Second
 const defaultMachineOperationRetries = 5
 
 // GetRegionFromZone returns the region for a given zone string
+//
+// PARAMETERS
+// zone string Datacenter zone
 func GetRegionFromZone(zone string) string {
 	zoneData := strings.SplitN(zone, "-", 2)
 	return zoneData[0]
 }
 
+// waitForActionsOfRequest waits for all actions to complete.
+//
+// PARAMETERS
+// ctx    context.Context Execution context
+// client *hcloud.Client  HCloud client
+// req    *http.Request   Actions endpoint request to perform
 func waitForActionsOfRequest(ctx context.Context, client *hcloud.Client, req *http.Request) error {
 	var body schema.ActionListResponse
 	repeat := true
@@ -66,6 +75,12 @@ func waitForActionsOfRequest(ctx context.Context, client *hcloud.Client, req *ht
 	return nil
 }
 
+// WaitForActionsAndGetFloatingIP waits for all actions to complete for the floating IP given and returns it afterwards.
+//
+// PARAMETERS
+// ctx    context.Context    Execution context
+// client *hcloud.Client     HCloud client
+// ip     *hcloud.FloatingIP HCloud floating IP struct
 func WaitForActionsAndGetFloatingIP(ctx context.Context, client *hcloud.Client, ip *hcloud.FloatingIP) (*hcloud.FloatingIP, error) {
 	req, err := client.NewRequest(ctx, "GET", fmt.Sprintf("/floating_ips/%d/actions?status=running", ip.ID), nil)
 	if err != nil {
@@ -85,6 +100,12 @@ func WaitForActionsAndGetFloatingIP(ctx context.Context, client *hcloud.Client, 
 	return ip, nil
 }
 
+// WaitForActionsAndGetServer waits for all actions to complete for the server given and returns it afterwards.
+//
+// PARAMETERS
+// ctx    context.Context Execution context
+// client *hcloud.Client  HCloud client
+// ip     *hcloud.Server  HCloud server struct
 func WaitForActionsAndGetServer(ctx context.Context, client *hcloud.Client, server *hcloud.Server) (*hcloud.Server, error) {
 	req, err := client.NewRequest(ctx, "GET", fmt.Sprintf("/servers/%d/actions?status=running", server.ID), nil)
 	if err != nil {

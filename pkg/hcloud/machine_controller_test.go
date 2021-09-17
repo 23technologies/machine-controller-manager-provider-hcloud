@@ -55,9 +55,9 @@ var _ = Describe("MachineController", func() {
 		apis.SetClientForToken("dummy-token", mockTestEnv.Client)
 		mock.SetupFloatingIPsEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
-		mock.SetupServer42EndpointOnMux(mockTestEnv.Mux)
 		mock.SetupServersEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupSshKeysEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupTestServerEndpointOnMux(mockTestEnv.Mux)
 	})
 
 	var _ = AfterEach(func() {
@@ -118,7 +118,7 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.CreateMachineRequest{
-						Machine:      mock.NewMachine(42),
+						Machine:      mock.NewMachine(mock.TestServerID),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
@@ -132,7 +132,7 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.CreateMachineRequest{
-						Machine:      mock.ManipulateMachine(mock.NewMachine(42), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
@@ -198,7 +198,7 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.DeleteMachineRequest{
-						Machine:      mock.NewMachine(42),
+						Machine:      mock.NewMachine(mock.TestServerID),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
@@ -226,7 +226,7 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.DeleteMachineRequest{
-						Machine:      mock.ManipulateMachine(mock.NewMachine(42), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
@@ -278,7 +278,7 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.GetMachineStatusRequest{
-						Machine:      mock.NewMachine(42),
+						Machine:      mock.NewMachine(mock.TestServerID),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
@@ -306,7 +306,7 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.GetMachineStatusRequest{
-						Machine:      mock.ManipulateMachine(mock.NewMachine(42), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},

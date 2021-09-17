@@ -35,7 +35,7 @@ import (
 // CreateMachine handles a machine creation request
 //
 // PARAMETERS
-// ctx context.Context              Request context
+// ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The create request for VM creation
 func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	var (
@@ -65,7 +65,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	imageName := providerSpec.ImageName
-	userDataBase64Enc := base64.StdEncoding.EncodeToString([]byte(userData))
+	userDataBase64Enc := base64.StdEncoding.EncodeToString(userData)
 
 	image, _, err := client.Image.GetByName(ctx, imageName)
 	if nil != err {
@@ -201,7 +201,7 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 // DeleteMachine handles a machine deletion request
 //
 // PARAMETERS
-// ctx context.Context              Request context
+// ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The delete request for VM deletion
 func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteMachineRequest) (*driver.DeleteMachineResponse, error) {
 	var (
@@ -259,7 +259,7 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 // GetMachineStatus handles a machine get status request
 //
 // PARAMETERS
-// ctx context.Context              Request context
+// ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The get request for VM info
 func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	var (
@@ -296,7 +296,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 // ListMachines lists all the machines possibilly created by a providerSpec
 //
 // PARAMETERS
-// ctx context.Context              Request context
+// ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The request object to get a list of VMs belonging to a machineClass
 func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMachinesRequest) (*driver.ListMachinesResponse, error) {
 	var (
@@ -344,7 +344,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 // GetVolumeIDs returns a list of Volume IDs for all PV Specs for whom an provider volume was found
 //
 // PARAMETERS
-// ctx context.Context              Request context
+// ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The request object to get a list of VolumeIDs for a PVSpec
 func (p *MachineProvider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
@@ -357,7 +357,7 @@ func (p *MachineProvider) GetVolumeIDs(ctx context.Context, req *driver.GetVolum
 // GenerateMachineClassForMigration helps in migration of one kind of machineClass CR to another kind.
 //
 // PARAMETERS
-// ctx context.Context              Request context
+// ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The request for generating the generic machineClass
 func (p *MachineProvider) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
 	// Log messages to track start and end of request

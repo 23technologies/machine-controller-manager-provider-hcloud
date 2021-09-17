@@ -28,6 +28,10 @@ import (
 	"k8s.io/component-base/logs"
 )
 
+// RunProviderHCloudManager runs the HCloud machine controller server.
+//
+// PARAMETERS
+// args *pflag.FlagSet Command line arguments
 func RunProviderHCloudManager(args *pflag.FlagSet) error {
 	s := options.NewMCServer()
 	s.AddFlags(args)

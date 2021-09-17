@@ -153,6 +153,7 @@ const (
 }
 	`
 	TestNamespace = "test"
+	TestServerID = 42
 	TestServerNameTemplate = "machine-%d"
 	testServersLabelSelector = "mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=hel1-dc2"
 )
@@ -288,33 +289,6 @@ func SetupImagesEndpointOnMux(mux *http.ServeMux) {
 	})
 }
 
-// SetupServer42EndpointOnMux configures a "/servers/42" endpoint on the mux given.
-//
-// PARAMETERS
-// mux *http.ServeMux Mux to add handler to
-func SetupServer42EndpointOnMux(mux *http.ServeMux) {
-	mux.HandleFunc("/servers/42", func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Add("Content-Type", "application/json; charset=utf-8")
-
-		if (strings.ToLower(req.Method) == "delete") {
-			res.WriteHeader(http.StatusOK)
-			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(42, "shutdown_server"))))
-		} else if (strings.ToLower(req.Method) == "get") {
-			res.WriteHeader(http.StatusOK)
-			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(42, "running"))))
-		} else {
-			panic("Unsupported HTTP method call")
-		}
-	})
-
-	mux.HandleFunc("/servers/42/actions", func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Add("Content-Type", "application/json; charset=utf-8")
-
-		res.WriteHeader(http.StatusOK)
-		res.Write([]byte("{ \"actions\": [] }"))
-	})
-}
-
 // SetupServersEndpointOnMux configures a "/servers" endpoint on the mux given.
 //
 // PARAMETERS
@@ -334,7 +308,7 @@ func SetupServersEndpointOnMux(mux *http.ServeMux) {
 			queryParams := req.URL.Query()
 
 			if (queryParams.Get("label_selector") == testServersLabelSelector || queryParams.Get("name") == fmt.Sprintf(TestServerNameTemplate, 0)) {
-				res.Write([]byte(newJsonServerData(42, "running")))
+				res.Write([]byte(newJsonServerData(TestServerID, "running")))
 			}
 
 			res.Write([]byte(`
@@ -354,7 +328,7 @@ func SetupServersEndpointOnMux(mux *http.ServeMux) {
 				panic(jsonErr)
 			}
 
-			jsonServerData := newJsonServerData(42, "starting")
+			jsonServerData := newJsonServerData(TestServerID, "starting")
 			res.Write([]byte(fmt.Sprintf("{ \"server\": %s, \"root_password\": \"test\" }", jsonServerData)))
 		} else {
 			panic("Unsupported HTTP method call")
@@ -396,5 +370,34 @@ func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 	]
 }
 		`))
+	})
+}
+
+// SetupTestServerEndpointOnMux configures a "/servers/42" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
+func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
+	baseURL := fmt.Sprintf("/servers/%d", TestServerID)
+
+	mux.HandleFunc(baseURL, func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if (strings.ToLower(req.Method) == "delete") {
+			res.WriteHeader(http.StatusOK)
+			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(TestServerID, "shutdown_server"))))
+		} else if (strings.ToLower(req.Method) == "get") {
+			res.WriteHeader(http.StatusOK)
+			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(TestServerID, "running"))))
+		} else {
+			panic("Unsupported HTTP method call")
+		}
+	})
+
+	mux.HandleFunc(fmt.Sprintf("%s/actions", baseURL), func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		res.WriteHeader(http.StatusOK)
+		res.Write([]byte("{ \"actions\": [] }"))
 	})
 }
