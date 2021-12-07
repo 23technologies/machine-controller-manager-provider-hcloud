@@ -57,6 +57,7 @@ var _ = Describe("MachineController", func() {
 		mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupServersEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupSshKeysEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupTestPlacementGroupEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestServerEndpointOnMux(mockTestEnv.Mux)
 	})
 

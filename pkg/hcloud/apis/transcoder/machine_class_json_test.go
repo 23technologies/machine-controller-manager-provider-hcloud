@@ -39,7 +39,7 @@ var _ = Describe("Transcoder", func() {
 			providerSpec, err := DecodeProviderSpecFromMachineClass(machineClass, providerSecret)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(providerSpec.SSHFingerprint).To(Equal(mock.TestProviderSpecSSHFingerprint))
+			Expect(providerSpec.SSHFingerprint).To(Equal(mock.TestSSHFingerprint))
 		})
 
 		It("should fail if an invalid machineClass is provided", func() {

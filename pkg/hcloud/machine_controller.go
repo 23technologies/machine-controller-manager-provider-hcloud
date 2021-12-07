@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
@@ -129,6 +130,23 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	server, err := apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
 	if nil != err {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if "" != providerSpec.PlacementGroupID {
+		placementGroupID, err := strconv.Atoi(providerSpec.PlacementGroupID)
+		if nil != err {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		placementGroup, _, err := client.PlacementGroup.GetByID(ctx, placementGroupID)
+		if nil != err {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		_, _, err = client.Server.AddToPlacementGroup(ctx, server, placementGroup)
+		if nil != err {
+			return nil, status.Error(codes.Unavailable, err.Error())
+		}
 	}
 
 	if "" != providerSpec.FloatingPoolName {

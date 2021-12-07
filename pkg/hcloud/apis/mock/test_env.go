@@ -24,6 +24,11 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 )
 
+const (
+	TestPlacementGroupID = "42"
+	testPlacementGroupJsonValue = float64(42)
+)
+
 // MockTestEnv represents the test environment for testing HCloud API calls
 type MockTestEnv struct {
 	Server *httptest.Server

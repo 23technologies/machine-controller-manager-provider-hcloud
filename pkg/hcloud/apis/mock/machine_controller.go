@@ -206,7 +206,7 @@ func NewMachine(serverID int) *v1alpha1.Machine {
 	// Don't initialize providerID and node if serverID == -1
 	if serverID != -1 {
 		machine.Spec = v1alpha1.MachineSpec{
-			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestProviderSpecZone, serverID),
+			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestZone, serverID),
 		}
 		machine.Status = v1alpha1.MachineStatus{
 			Node: fmt.Sprintf("ip-%d", serverID),
@@ -240,7 +240,7 @@ func NewMachineClassWithProviderSpec(providerSpec []byte) *v1alpha1.MachineClass
 // serverState string Server state to use
 func newJsonServerData(serverID int, serverState string) string {
 	testServerName := fmt.Sprintf(TestServerNameTemplate, serverID)
-	return fmt.Sprintf(jsonServerDataTemplate, serverID, testServerName, serverState, TestProviderSpecServerType, TestProviderSpecZone, jsonImageData)
+	return fmt.Sprintf(jsonServerDataTemplate, serverID, testServerName, serverState, TestServerType, TestZone, jsonImageData)
 }
 
 // SetupFloatingIPsEndpointOnMux configures a "/floating_ips" endpoint on the mux given.
@@ -278,7 +278,7 @@ func SetupImagesEndpointOnMux(mux *http.ServeMux) {
 
 		queryParams := req.URL.Query()
 
-		if (queryParams.Get("name") == TestProviderSpecImageName) {
+		if (queryParams.Get("name") == TestImageName) {
 			res.Write([]byte(jsonImageData))
 		}
 
@@ -353,7 +353,7 @@ func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 	"ssh_keys": [
 		`))
 
-		if (queryParams.Get("fingerprint") == TestProviderSpecSSHFingerprint) {
+		if (queryParams.Get("fingerprint") == TestSSHFingerprint) {
 			res.Write([]byte(`
 {
 	"id": 42,
@@ -370,6 +370,35 @@ func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 	]
 }
 		`))
+	})
+}
+
+// SetupTestPlacementGroupEndpointOnMux configures a "/placement_groups/42" endpoint on the mux given.
+//
+// PARAMETERS
+// mux *http.ServeMux Mux to add handler to
+func SetupTestPlacementGroupEndpointOnMux(mux *http.ServeMux) {
+	mux.HandleFunc(fmt.Sprintf("/placement_groups/%s", TestPlacementGroupID), func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if (strings.ToLower(req.Method) == "get") {
+			res.WriteHeader(http.StatusOK)
+
+			res.Write([]byte(`
+{
+	"placement_group": {
+		"created": "2019-01-08T12:10:00+00:00",
+		"id": 42,
+		"labels": { },
+		"name": "Simulated Placement Group",
+		"servers": [ ],
+		"type": "spread"
+	}
+}
+			`))
+		} else {
+			panic("Unsupported HTTP method call")
+		}
 	})
 }
 
@@ -399,5 +428,31 @@ func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
 
 		res.WriteHeader(http.StatusOK)
 		res.Write([]byte("{ \"actions\": [] }"))
+	})
+
+	mux.HandleFunc(fmt.Sprintf("%s/actions/add_to_placement_group", baseURL), func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if (strings.ToLower(req.Method) == "post") {
+			res.WriteHeader(http.StatusCreated)
+
+			jsonData := make([]byte, req.ContentLength)
+			req.Body.Read(jsonData)
+
+			var data map[string]interface{}
+
+			jsonErr := json.Unmarshal(jsonData, &data)
+			if jsonErr != nil {
+				panic(jsonErr)
+			}
+
+			if placementGroupID, ok := data["placement_group"]; !ok || testPlacementGroupJsonValue != placementGroupID {
+				panic("Invalid HTTP method data")
+			}
+
+			res.Write([]byte("{ \"action\": {} }"))
+		} else {
+			panic("Unsupported HTTP method call")
+		}
 	})
 }

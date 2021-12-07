@@ -81,10 +81,10 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Zone: mock.TestProviderSpecZone,
-						ImageName: mock.TestProviderSpecImageName,
-						ServerType: mock.TestProviderSpecServerType,
-						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
+						Zone: mock.TestZone,
+						ImageName: mock.TestImageName,
+						ServerType: mock.TestServerType,
+						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -99,10 +99,10 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestProviderSpecCluster,
-						ImageName: mock.TestProviderSpecImageName,
-						ServerType: mock.TestProviderSpecServerType,
-						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
+						Cluster: mock.TestCluster,
+						ImageName: mock.TestImageName,
+						ServerType: mock.TestServerType,
+						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -117,10 +117,10 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestProviderSpecCluster,
-						Zone: mock.TestProviderSpecZone,
-						ServerType: mock.TestProviderSpecServerType,
-						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
+						Cluster: mock.TestCluster,
+						Zone: mock.TestZone,
+						ServerType: mock.TestServerType,
+						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -135,10 +135,10 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestProviderSpecCluster,
-						Zone: mock.TestProviderSpecZone,
-						ImageName: mock.TestProviderSpecImageName,
-						SSHFingerprint: mock.TestProviderSpecSSHFingerprint,
+						Cluster: mock.TestCluster,
+						Zone: mock.TestZone,
+						ImageName: mock.TestImageName,
+						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
 				},
@@ -153,10 +153,10 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestProviderSpecCluster,
-						Zone: mock.TestProviderSpecZone,
-						ImageName: mock.TestProviderSpecImageName,
-						ServerType: mock.TestProviderSpecServerType,
+						Cluster: mock.TestCluster,
+						Zone: mock.TestZone,
+						ImageName: mock.TestImageName,
+						ServerType: mock.TestServerType,
 					},
 					secret: providerSecret,
 				},

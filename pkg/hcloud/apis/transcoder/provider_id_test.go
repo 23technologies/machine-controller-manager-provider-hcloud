@@ -29,10 +29,10 @@ import (
 var _ = Describe("ProviderID", func() {
 	Describe("#DecodeServerDataFromProviderID", func() {
 		It("should correctly parse and return decoded server information", func() {
-			serverData, err := DecodeServerDataFromProviderID(EncodeProviderID(mock.TestProviderSpecZone, mock.TestServerID))
+			serverData, err := DecodeServerDataFromProviderID(EncodeProviderID(mock.TestZone, mock.TestServerID))
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(serverData.Zone).To(Equal(mock.TestProviderSpecZone))
+			Expect(serverData.Zone).To(Equal(mock.TestZone))
 			Expect(serverData.ID).To(Equal(mock.TestServerID))
 		})
 
@@ -60,10 +60,10 @@ var _ = Describe("ProviderID", func() {
 
 	Describe("#DecodeZoneFromProviderID", func() {
 		It("should correctly parse and return a zone", func() {
-			zone, err := DecodeZoneFromProviderID(EncodeProviderID(mock.TestProviderSpecZone, mock.TestServerID))
+			zone, err := DecodeZoneFromProviderID(EncodeProviderID(mock.TestZone, mock.TestServerID))
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(zone).To(Equal(mock.TestProviderSpecZone))
+			Expect(zone).To(Equal(mock.TestZone))
 		})
 
 		It("should fail if an unsupported provider ID scheme is provided", func() {
@@ -90,7 +90,7 @@ var _ = Describe("ProviderID", func() {
 
 	Describe("#DecodeServerIDFromProviderID", func() {
 		It("should correctly parse and return a server ID", func() {
-			serverID, err := DecodeServerIDFromProviderID(EncodeProviderID(mock.TestProviderSpecZone, mock.TestServerID))
+			serverID, err := DecodeServerIDFromProviderID(EncodeProviderID(mock.TestZone, mock.TestServerID))
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(serverID).To(Equal(mock.TestServerID))
@@ -120,7 +120,7 @@ var _ = Describe("ProviderID", func() {
 
 	Describe("#DecodeServerIDAsStringFromProviderID", func() {
 		It("should correctly parse and return a server ID", func() {
-			serverID, err := DecodeServerIDAsStringFromProviderID(EncodeProviderID(mock.TestProviderSpecZone, mock.TestServerID))
+			serverID, err := DecodeServerIDAsStringFromProviderID(EncodeProviderID(mock.TestZone, mock.TestServerID))
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(serverID).To(Equal(strconv.Itoa(mock.TestServerID)))
@@ -150,8 +150,8 @@ var _ = Describe("ProviderID", func() {
 
 	Describe("#EncodeProviderID", func() {
 		It("should correctly encode a provider ID", func() {
-			providerID := EncodeProviderID(mock.TestProviderSpecZone, mock.TestServerID)
-			Expect(providerID).To(Equal(fmt.Sprintf("hcloud:///%s/%d", mock.TestProviderSpecZone, mock.TestServerID)))
+			providerID := EncodeProviderID(mock.TestZone, mock.TestServerID)
+			Expect(providerID).To(Equal(fmt.Sprintf("hcloud:///%s/%d", mock.TestZone, mock.TestServerID)))
 		})
 	})
 })

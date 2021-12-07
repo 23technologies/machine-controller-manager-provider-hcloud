@@ -25,6 +25,7 @@ type ProviderSpec struct {
 	ImageName        string `json:"imageName"`
 	SSHFingerprint   string `json:"sshFingerprint"`
 
+	PlacementGroupID string `json:"placementGroupID,omitempty"`
 	FloatingPoolName string `json:"floatingPoolName,omitempty"`
 	NetworkName      string `json:"networkName,omitempty"`
 }
