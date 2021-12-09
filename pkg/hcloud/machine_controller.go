@@ -147,6 +147,11 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		if nil != err {
 			return nil, status.Error(codes.Unavailable, err.Error())
 		}
+
+		server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
+		if nil != err {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	if "" != providerSpec.FloatingPoolName {
