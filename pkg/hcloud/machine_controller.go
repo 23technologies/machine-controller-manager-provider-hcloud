@@ -39,10 +39,28 @@ import (
 // ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The create request for VM creation
 func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
+	extendedCtx := context.WithValue(ctx, CtxWrapDataKey("MethodData"), &CreateMachineMethodData{})
+
+	resp, err := p.createMachine(extendedCtx, req)
+
+	if nil != err {
+		p.createMachineOnErrorCleanup(extendedCtx, req, err)
+	}
+
+	return resp, err
+}
+
+// createMachine handles the actual machine creation request without cleanup
+//
+// PARAMETERS
+// ctx context.Context              Execution context
+// req *driver.CreateMachineRequest The create request for VM creation
+func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateMachineRequest) (*driver.CreateMachineResponse, error) {
 	var (
 		machine      = req.Machine
 		machineClass = req.MachineClass
 		secret       = req.Secret
+		resultData   = ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
 	)
 
 	// Log messages to track request
@@ -130,6 +148,8 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
+	resultData.ServerID = serverResult.Server.ID
+
 	server, err := apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
 	if nil != err {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -179,6 +199,8 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 
+			resultData.FloatingIPID = ipResult.FloatingIP.ID
+
 			_, err = apis.WaitForActionsAndGetFloatingIP(ctx, client, ipResult.FloatingIP)
 			if nil != err {
 				return nil, status.Error(codes.Internal, err.Error())
@@ -219,6 +241,31 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	return response, nil
+}
+
+// createMachineOnErrorCleanup cleans up a failed machine creation request
+//
+// PARAMETERS
+// ctx context.Context              Execution context
+// req *driver.CreateMachineRequest The create request for VM creation
+// err error                        Error encountered
+func (p *MachineProvider) createMachineOnErrorCleanup(ctx context.Context, req *driver.CreateMachineRequest, err error) {
+	client := apis.GetClientForToken(string(req.Secret.Data["token"]))
+	resultData := ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
+
+	if resultData.ServerID != 0 {
+		server, _, _ := client.Server.GetByID(ctx, resultData.ServerID)
+		if nil != server {
+			_, _ = client.Server.Delete(ctx, server)
+		}
+	}
+
+	if resultData.FloatingIPID != 0 {
+		floatingIP, _, _ := client.FloatingIP.GetByID(ctx, resultData.FloatingIPID)
+		if nil != floatingIP {
+			_, _ = client.FloatingIP.Delete(ctx, floatingIP)
+		}
+	}
 }
 
 // DeleteMachine handles a machine deletion request
