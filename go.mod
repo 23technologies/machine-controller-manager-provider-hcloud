@@ -1,12 +1,12 @@
 module github.com/23technologies/machine-controller-manager-provider-hcloud
 
-go 1.13
+go 1.16
 
 require (
 	github.com/gardener/machine-controller-manager v0.42.0
 	github.com/hetznercloud/hcloud-go v1.33.1
-	github.com/onsi/ginkgo v1.16.2
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/gomega v1.17.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.20.6
 	k8s.io/apimachinery v0.20.6
