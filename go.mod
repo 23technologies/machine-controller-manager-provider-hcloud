@@ -3,7 +3,7 @@ module github.com/23technologies/machine-controller-manager-provider-hcloud
 go 1.16
 
 require (
-	github.com/gardener/machine-controller-manager v0.42.0
+	github.com/gardener/machine-controller-manager v0.43.0
 	github.com/hetznercloud/hcloud-go v1.33.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
@@ -15,7 +15,7 @@ require (
 )
 
 replace (
-	github.com/gardener/machine-controller-manager => github.com/gardener/machine-controller-manager v0.42.0
+	github.com/gardener/machine-controller-manager => github.com/gardener/machine-controller-manager v0.43.0
 	k8s.io/api => k8s.io/api v0.20.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.20.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.6
