@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
