@@ -30,7 +30,7 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	"github.com/hetznercloud/hcloud-go/hcloud"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // CreateMachine handles a machine creation request
