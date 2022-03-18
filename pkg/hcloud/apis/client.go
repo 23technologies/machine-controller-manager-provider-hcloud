@@ -18,8 +18,10 @@ limitations under the License.
 package apis
 
 import (
-	"github.com/hetznercloud/hcloud-go/hcloud"
 	"strings"
+
+	"github.com/hetznercloud/hcloud-go/hcloud"
+	"k8s.io/klog/v2"
 )
 
 var singletons = make(map[string]*hcloud.Client)
@@ -31,6 +33,7 @@ var singletons = make(map[string]*hcloud.Client)
 func GetClientForToken(token string) *hcloud.Client {
 	// if one accidentially copies a newline character into the token, remove it!
 	if strings.Contains(token, "\n") {
+		klog.InfoS("Your HCloud token contains a newline character. I will remove it for you but you should consider to remove it.")
 		token = strings.Replace(token, "\n", "", -1)
 	}
 

@@ -11,7 +11,7 @@ require (
 	k8s.io/api v0.20.6
 	k8s.io/apimachinery v0.20.6
 	k8s.io/component-base v0.20.6
-	k8s.io/klog v0.4.0
+	k8s.io/klog/v2 v2.4.0
 )
 
 replace (
