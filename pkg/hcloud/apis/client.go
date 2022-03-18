@@ -18,7 +18,10 @@ limitations under the License.
 package apis
 
 import (
+	"strings"
+
 	"github.com/hetznercloud/hcloud-go/hcloud"
+	"k8s.io/klog/v2"
 )
 
 var singletons = make(map[string]*hcloud.Client)
@@ -28,6 +31,12 @@ var singletons = make(map[string]*hcloud.Client)
 // PARAMETERS
 // token string Token to look up client instance for
 func GetClientForToken(token string) *hcloud.Client {
+	// if one accidentially copies a newline character into the token, remove it!
+	if strings.Contains(token, "\n") {
+		klog.InfoS("Your bearer token contains a newline character. I will remove it for you, but you should consider to remove it, too. Then, I will stop complaining.", "bearer token", "****\n ?")
+		token = strings.Replace(token, "\n", "", -1)
+	}
+
 	client, ok := singletons[token]
 
 	if !ok {
