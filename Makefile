@@ -17,7 +17,7 @@ COVERPROFILE       := test/output/coverprofile.out
 PROVIDER_NAME      := HCloud
 REPO_ROOT          := $(shell dirname $(realpath $(lastword ${MAKEFILE_LIST})))
 VERSION            := $(shell cat "${REPO_ROOT}/VERSION")
-LD_FLAGS           := "-w -X github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/version.Version=${VERSION}"
+LD_FLAGS           := "-w $(shell hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION)"
 CONTROL_NAMESPACE  := shoot--foobar--hcloud
 CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
