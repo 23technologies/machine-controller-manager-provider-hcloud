@@ -1,10 +1,13 @@
 apiVersion: machine.sapcloud.io/v1alpha1
 kind: MachineClass
 metadata:
-  name: test-mc
-  namespace: default # Namespace where the controller would watch
+  name: cx11-ubuntu
+  namespace: shoot--foobar--hcloud
 providerSpec:
-  dummy-field: "provider-api based fields goes here"
+  imageName: "ubuntu-20.04"
+  zone: "hel1-dc2"
+  serverType: "cx11-ceph"
+  sshFingerprint: "ssh-rsa invalid"
 secretRef: # If required
-  name: test-secret
-  namespace: default # Namespace where the controller would watch
+  name: hcloud-test-secret
+  namespace: default # Namespace where the controller would watchroot
