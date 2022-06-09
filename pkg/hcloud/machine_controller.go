@@ -83,6 +83,22 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
+	server, _, _ := client.Server.GetByName(ctx, machine.Name)
+	if nil != server {
+		resultData.ServerID = server.ID
+
+		if "" != providerSpec.FloatingPoolName {
+			name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
+
+			floatingIP, _, _ := client.FloatingIP.GetByName(ctx, name)
+			if floatingIP != nil {
+				resultData.FloatingIPID = floatingIP.ID
+			}
+		}
+
+		return nil, status.Error(codes.Aborted, "Server already exists - cleaning up")
+	}
+
 	imageName := providerSpec.ImageName
 	userDataBase64Enc := base64.StdEncoding.EncodeToString(userData)
 
@@ -150,7 +166,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	resultData.ServerID = serverResult.Server.ID
 
-	server, err := apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
+	server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
 	if nil != err {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

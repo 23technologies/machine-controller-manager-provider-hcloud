@@ -293,7 +293,9 @@ func SetupImagesEndpointOnMux(mux *http.ServeMux) {
 //
 // PARAMETERS
 // mux *http.ServeMux Mux to add handler to
-func SetupServersEndpointOnMux(mux *http.ServeMux) {
+func SetupServersEndpointOnMux(mux *http.ServeMux, emptyOnFirstRequest bool) {
+	isEmptyFirstRequest := emptyOnFirstRequest
+
 	mux.HandleFunc("/servers", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
@@ -308,7 +310,11 @@ func SetupServersEndpointOnMux(mux *http.ServeMux) {
 			queryParams := req.URL.Query()
 
 			if (queryParams.Get("label_selector") == testServersLabelSelector || queryParams.Get("name") == fmt.Sprintf(TestServerNameTemplate, 0)) {
-				res.Write([]byte(newJsonServerData(TestServerID, "running")))
+				if emptyOnFirstRequest && isEmptyFirstRequest {
+					isEmptyFirstRequest = false
+				} else {
+					res.Write([]byte(newJsonServerData(TestServerID, "running")))
+				}
 			}
 
 			res.Write([]byte(`

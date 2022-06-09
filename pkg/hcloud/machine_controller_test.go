@@ -55,7 +55,7 @@ var _ = Describe("MachineController", func() {
 		apis.SetClientForToken("dummy-token", mockTestEnv.Client)
 		mock.SetupFloatingIPsEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupImagesEndpointOnMux(mockTestEnv.Mux)
-		mock.SetupServersEndpointOnMux(mockTestEnv.Mux)
+		mock.SetupServersEndpointOnMux(mockTestEnv.Mux, true)
 		mock.SetupSshKeysEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestPlacementGroupEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestServerEndpointOnMux(mockTestEnv.Mux)
