@@ -65,7 +65,7 @@ func waitForActionsOfRequest(ctx context.Context, client *hcloud.Client, req *ht
 
 		if repeat {
 			if tryCount > defaultMachineOperationRetries {
-				return errors.New("Maximum number of retries exceeded waiting for IP actions")
+				return errors.New("Maximum number of retries exceeded waiting for actions")
 			}
 
 			time.Sleep(defaultMachineOperationInterval)
