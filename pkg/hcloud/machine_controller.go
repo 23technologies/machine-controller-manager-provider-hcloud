@@ -405,27 +405,37 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 // req *driver.CreateMachineRequest The get request for VM info
 func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	var (
-		machine      = req.Machine
-		secret       = req.Secret
+		err      error
+		machine  = req.Machine
+		secret   = req.Secret
+		server   *hcloud.Server
+		serverID int
 	)
 
 	// Log messages to track start and end of request
 	klog.V(2).Infof("Get request has been received for %q", machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", machine.Name)
 
-	// Handle case where machine lookup occurs with empty provider ID
-	if machine.Spec.ProviderID == "" {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("Provider ID for machine %q is not defined", machine.Name))
-	}
-
-	serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
-	server, _, err := client.Server.GetByID(ctx, serverID)
+	// Handle case where machine lookup occurs with empty provider ID
+	if machine.Spec.ProviderID == "" {
+		server, _, err = client.Server.GetByName(ctx, machine.Name)
+
+		if server == nil {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("Provider ID for machine %q is not defined (%q)", machine.Name, err))
+		}
+
+		serverID = server.ID
+	} else {
+		serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
+		if err == nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		server, _, err = client.Server.GetByID(ctx, serverID)
+	}
+
 	if nil != err {
 		return nil, status.Error(codes.Unavailable, err.Error())
 	} else if server == nil {
