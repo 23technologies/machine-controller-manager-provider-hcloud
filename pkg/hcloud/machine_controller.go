@@ -84,19 +84,18 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	server, _, _ := client.Server.GetByName(ctx, machine.Name)
+
 	if nil != server {
-		resultData.ServerID = server.ID
+		var errorCode codes.Code
+		isCleanupAvailable := p.createMachineValidateDeploymentAndCleanup(ctx, req, server)
 
-		if "" != providerSpec.FloatingPoolName {
-			name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
-
-			floatingIP, _, _ := client.FloatingIP.GetByName(ctx, name)
-			if floatingIP != nil {
-				resultData.FloatingIPID = floatingIP.ID
-			}
+		if isCleanupAvailable {
+			errorCode = codes.Aborted
+		} else {
+			errorCode = codes.AlreadyExists
 		}
 
-		return nil, status.Error(codes.Aborted, "Server already exists - cleaning up")
+		return nil, status.Error(errorCode, "Server already exists")
 	}
 
 	imageName := providerSpec.ImageName
@@ -257,6 +256,63 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	return response, nil
+}
+
+// createMachineOnErrorCleanup cleans up a failed machine creation request
+//
+// PARAMETERS
+// ctx context.Context              Execution context
+// req *driver.CreateMachineRequest The create request for VM creation
+// err error                        Error encountered
+func (p *MachineProvider) createMachineValidateDeploymentAndCleanup(ctx context.Context, req *driver.CreateMachineRequest, server *hcloud.Server) bool {
+	var (
+		machine      = req.Machine
+		machineClass = req.MachineClass
+		secret       = req.Secret
+	)
+
+	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
+	if nil != err {
+		return false
+	}
+
+	isCleanupAvailable := true
+
+	if clusterLabel, ok := server.Labels["mcm.gardener.cloud/cluster"]; !ok || providerSpec.Cluster != clusterLabel {
+		isCleanupAvailable = false
+	}
+
+	if roleLabel, ok := server.Labels["mcm.gardener.cloud/role"]; !ok || "node" != roleLabel {
+		isCleanupAvailable = false
+	}
+
+	region := apis.GetRegionFromZone(providerSpec.Zone)
+
+	if regionLabel, ok := server.Labels["topology.kubernetes.io/region"]; !ok || region != regionLabel {
+		isCleanupAvailable = false
+	}
+
+	if zoneLabel, ok := server.Labels["topology.kubernetes.io/zone"]; !ok || providerSpec.Zone != zoneLabel {
+		isCleanupAvailable = false
+	}
+
+	if (isCleanupAvailable) {
+		client := apis.GetClientForToken(string(req.Secret.Data["token"]))
+		resultData := ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
+
+		resultData.ServerID = server.ID
+
+		if "" != providerSpec.FloatingPoolName {
+			name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
+
+			floatingIP, _, _ := client.FloatingIP.GetByName(ctx, name)
+			if floatingIP != nil {
+				resultData.FloatingIPID = floatingIP.ID
+			}
+		}
+	}
+
+	return isCleanupAvailable
 }
 
 // createMachineOnErrorCleanup cleans up a failed machine creation request
