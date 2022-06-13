@@ -429,7 +429,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		serverID = server.ID
 	} else {
 		serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
-		if err == nil {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
