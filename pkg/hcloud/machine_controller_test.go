@@ -219,8 +219,7 @@ var _ = Describe("MachineController", func() {
 					},
 				},
 				expect: expect{
-					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errToHaveOccurred: false,
 				},
 			}),
 			Entry("contains an invalid provider ID", &data{
