@@ -356,23 +356,29 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 	klog.V(2).Infof("Machine deletion request has been received for %q", machine.Name)
 	defer klog.V(2).Infof("Machine deletion request has been processed for %q", machine.Name)
 
-	serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
-	if nil != err {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
 	if nil != err {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	client := apis.GetClientForToken(string(secret.Data["token"]))
+	var server *hcloud.Server
+	if machine.Spec.ProviderID != "" {
 
-	server, _, err := client.Server.GetByID(ctx, serverID)
+		serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
+		if nil != err {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		server, _, err = client.Server.GetByID(ctx, serverID)
+	} else {
+		server, _, err = client.Server.GetByName(ctx, machine.Name)
+	}
 	if nil != err {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	} else if server == nil {
-		klog.V(3).Infof("VM %s (%d) does not exist", machine.Name, serverID)
+		klog.V(3).Infof("VM %s does not exist", machine.Name)
 		return &driver.DeleteMachineResponse{}, nil
 	}
 
