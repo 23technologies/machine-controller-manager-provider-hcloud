@@ -18,7 +18,7 @@ PROVIDER_NAME      := HCloud
 REPO_ROOT          := $(shell dirname $(realpath $(lastword ${MAKEFILE_LIST})))
 VERSION            := $(shell cat "${REPO_ROOT}/VERSION")
 LD_FLAGS           := "-w $(shell hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION)"
-CONTROL_NAMESPACE  := shoot--foobar--hcloud
+CONTROL_NAMESPACE  := default
 CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
 TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
 
@@ -32,6 +32,21 @@ start:
 			-mod=vendor \
 		    -ldflags ${LD_FLAGS} \
 			cmd/machine-controller-manager-provider-hcloud/main.go \
+			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
+			--target-kubeconfig=$(TARGET_KUBECONFIG) \
+			--namespace=$(CONTROL_NAMESPACE) \
+			--machine-creation-timeout=20m \
+			--machine-drain-timeout=5m \
+			--machine-health-timeout=10m \
+			--machine-pv-detach-timeout=2m \
+			--machine-safety-apiserver-statuscheck-timeout=30s \
+			--machine-safety-apiserver-statuscheck-period=1m \
+			--machine-safety-orphan-vms-period=30m \
+			--v=5
+
+.PHONY: debug
+debug:
+			dlv debug cmd/machine-controller-manager-provider-hcloud/main.go --\
 			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
 			--target-kubeconfig=$(TARGET_KUBECONFIG) \
 			--namespace=$(CONTROL_NAMESPACE) \
