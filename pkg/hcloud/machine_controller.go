@@ -417,6 +417,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		err      error
 		machine  = req.Machine
 		secret   = req.Secret
+		machineClass = req.MachineClass
 		server   *hcloud.Server
 		serverID int
 	)
@@ -424,6 +425,11 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 	// Log messages to track start and end of request
 	klog.V(2).Infof("Get request has been received for %q", machine.Name)
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", machine.Name)
+
+	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
+	if nil != err {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
@@ -451,7 +457,8 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("VM %s (%d) does not exist", machine.Name, serverID))
 	}
 
-	return &driver.GetMachineStatusResponse{ ProviderID: machine.Spec.ProviderID, NodeName: server.Name }, nil
+	providerID := transcoder.EncodeProviderID(providerSpec.Zone, serverID)
+	return &driver.GetMachineStatusResponse{ ProviderID: providerID, NodeName: server.Name }, nil
 }
 
 // ListMachines lists all the machines possibilly created by a providerSpec
