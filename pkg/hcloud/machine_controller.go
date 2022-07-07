@@ -167,7 +167,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
 	if nil != err {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if "" != providerSpec.PlacementGroupID {
@@ -188,7 +188,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 		server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
 		if nil != err {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
 
@@ -232,7 +232,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
 	if nil != err {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// Compare running results with expectation
