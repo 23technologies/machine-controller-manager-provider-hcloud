@@ -325,11 +325,14 @@ func (p *MachineProvider) createMachineOnErrorCleanup(ctx context.Context, req *
 	client := apis.GetClientForToken(string(req.Secret.Data["token"]))
 	resultData := ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
 
+  server := &hcloud.Server{}
 	if resultData.ServerID != 0 {
-		server, _, _ := client.Server.GetByID(ctx, resultData.ServerID)
-		if nil != server {
+		server, _, _ = client.Server.GetByID(ctx, resultData.ServerID)
+	} else {
+		server, _, _ = client.Server.GetByName(ctx, req.Machine.Name)
+	}
+	if nil != server {
 			_, _ = client.Server.Delete(ctx, server)
-		}
 	}
 
 	if resultData.FloatingIPID != 0 {
