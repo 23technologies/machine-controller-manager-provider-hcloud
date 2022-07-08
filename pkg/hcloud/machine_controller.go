@@ -235,6 +235,12 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
+	// For some reason our machine was not started, return an error in this case
+	// This behavior was observed from time to time. Therefore, this check is meaningful
+	if server.Status != hcloud.ServerStatusRunning {
+		return nil, status.Error(codes.Unknown, fmt.Sprintf("Server was not started for some reason."))
+	}
+
 	// Compare running results with expectation
 	unexpectedState := ""
 
