@@ -4,7 +4,6 @@ apiVersion: apps/v1 # Version may change based on kubernetes version
 kind: Deployment
 metadata:
   name: machine-controller-manager
-  namespace: shoot--foobar--hcloud
 spec:
   replicas: 1
   template:

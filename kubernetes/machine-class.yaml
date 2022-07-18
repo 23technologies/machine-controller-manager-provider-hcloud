@@ -2,6 +2,7 @@ apiVersion: machine.sapcloud.io/v1alpha1
 kind: MachineClass
 metadata:
   name: cx11-ubuntu
+  namespace: default
 providerSpec:
   cluster: "default"
   imageName: "ubuntu-20.04"
