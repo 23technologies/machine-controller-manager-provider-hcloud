@@ -8,7 +8,7 @@ COPY . .
 RUN hack/build.sh
 
 #############      base                                     #############
-FROM eu.gcr.io/distroless/static-debian11:nonroot as base
+FROM gcr.io/distroless/static-debian11:nonroot as base
 
 WORKDIR /
 
