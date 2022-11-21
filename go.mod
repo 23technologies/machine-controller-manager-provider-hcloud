@@ -1,6 +1,6 @@
 module github.com/23technologies/machine-controller-manager-provider-hcloud
 
-go 1.17
+go 1.19
 
 require (
 	github.com/gardener/machine-controller-manager v0.46.0
