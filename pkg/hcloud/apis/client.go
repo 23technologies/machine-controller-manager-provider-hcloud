@@ -18,6 +18,7 @@ limitations under the License.
 package apis
 
 import (
+	"os"
 	"strings"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
@@ -40,10 +41,17 @@ func GetClientForToken(token string) *hcloud.Client {
 	client, ok := singletons[token]
 
 	if !ok {
-		client = hcloud.NewClient(hcloud.WithToken(token))
+		opts := []hcloud.ClientOption{
+			hcloud.WithToken(token),
+			hcloud.WithApplication("machine-controller-manager-provider-hcloud", "v0.0.0"),
+		}
+		if endpoint := os.Getenv("HCLOUD_ENDPOINT"); endpoint != "" {
+			opts = append(opts, hcloud.WithEndpoint(endpoint))
+		}
+		client = hcloud.NewClient(opts...)
 	}
 
-    return client
+	return client
 }
 
 // SetClientForToken sets a preconfigured HCloud client for the given token.
