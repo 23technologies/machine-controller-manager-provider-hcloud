@@ -1,8 +1,8 @@
 name: go:publish
 
 on:
-  release:
-    types: [ released ]
+  push:
+    tags: 'v*'
   workflow_dispatch:
 
 jobs:
