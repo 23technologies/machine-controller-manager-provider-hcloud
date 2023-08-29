@@ -209,7 +209,6 @@ func NewMachine(serverID int) *v1alpha1.Machine {
 			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestZone, serverID),
 		}
 		machine.Status = v1alpha1.MachineStatus{
-			Node: fmt.Sprintf("ip-%d", serverID),
 		}
 	}
 
