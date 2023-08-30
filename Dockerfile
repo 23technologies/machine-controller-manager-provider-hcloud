@@ -1,5 +1,5 @@
 #############      builder                                  #############
-FROM eu.gcr.io/gardener-project/3rd/golang:1.18.4 AS builder
+FROM golang:1.20.2 AS builder
 
 ENV BINARY_PATH=/go/bin
 WORKDIR /go/src/github.com/23technologies/machine-controller-manager-provider-hcloud
