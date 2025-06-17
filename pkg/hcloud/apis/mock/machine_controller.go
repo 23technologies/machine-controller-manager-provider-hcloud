@@ -18,8 +18,9 @@ limitations under the License.
 package mock
 
 import (
-	"fmt"
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -152,9 +153,9 @@ const (
 	"load_balancers": []
 }
 	`
-	TestNamespace = "test"
-	TestServerID = 42
-	TestServerNameTemplate = "machine-%d"
+	TestNamespace            = "test"
+	TestServerID             = 42
+	TestServerNameTemplate   = "machine-%d"
 	testServersLabelSelector = "mcm.gardener.cloud/role=node,topology.kubernetes.io/zone=hel1-dc2"
 )
 
@@ -165,13 +166,13 @@ const (
 // data    map[string]interface{} Members to change
 func ManipulateMachine(machine *v1alpha1.Machine, data map[string]interface{}) *v1alpha1.Machine {
 	for key, value := range data {
-		if (strings.Index(key, "ObjectMeta") == 0) {
+		if strings.Index(key, "ObjectMeta") == 0 {
 			manipulateStruct(&machine.ObjectMeta, key[11:], value)
-		} else if (strings.Index(key, "Spec") == 0) {
+		} else if strings.Index(key, "Spec") == 0 {
 			manipulateStruct(&machine.Spec, key[5:], value)
-		} else if (strings.Index(key, "Status") == 0) {
+		} else if strings.Index(key, "Status") == 0 {
 			manipulateStruct(&machine.Status, key[7:], value)
-		} else if (strings.Index(key, "TypeMeta") == 0) {
+		} else if strings.Index(key, "TypeMeta") == 0 {
 			manipulateStruct(&machine.TypeMeta, key[9:], value)
 		} else {
 			manipulateStruct(&machine, key, value)
@@ -208,8 +209,7 @@ func NewMachine(serverID int) *v1alpha1.Machine {
 		machine.Spec = v1alpha1.MachineSpec{
 			ProviderID: fmt.Sprintf("hcloud:///%s/%d", TestZone, serverID),
 		}
-		machine.Status = v1alpha1.MachineStatus{
-		}
+		machine.Status = v1alpha1.MachineStatus{}
 	}
 
 	return machine
@@ -252,11 +252,13 @@ func SetupFloatingIPsEndpointOnMux(mux *http.ServeMux) {
 
 		res.WriteHeader(http.StatusOK)
 
-		res.Write([]byte(`
+		if _, err := res.Write([]byte(`
 {
 	"floating_ips": []
 }
-		`))
+		`)); err != nil {
+			panic(err)
+		}
 	})
 }
 
@@ -270,21 +272,27 @@ func SetupImagesEndpointOnMux(mux *http.ServeMux) {
 
 		res.WriteHeader(http.StatusOK)
 
-		res.Write([]byte(`
+		if _, err := res.Write([]byte(`
 {
 	"images": [
-		`))
+		`)); err != nil {
+			panic(err)
+		}
 
 		queryParams := req.URL.Query()
 
-		if (queryParams.Get("name") == TestImageName) {
-			res.Write([]byte(jsonImageData))
+		if queryParams.Get("name") == TestImageName {
+			if _, err := res.Write([]byte(jsonImageData)); err != nil {
+				panic(err)
+			}
 		}
 
-		res.Write([]byte(`
+		if _, err := res.Write([]byte(`
 	]
 }
-		`))
+		`)); err != nil {
+			panic(err)
+		}
 	})
 }
 
@@ -298,29 +306,32 @@ func SetupServersEndpointOnMux(mux *http.ServeMux, emptyOnFirstRequest bool) {
 	mux.HandleFunc("/servers", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
-		if (strings.ToLower(req.Method) == "get") {
+		if strings.ToLower(req.Method) == "get" {
 			res.WriteHeader(http.StatusOK)
 
-			res.Write([]byte(`
+			var response bytes.Buffer
+			response.Write([]byte(`
 {
 	"servers": [
 			`))
 
 			queryParams := req.URL.Query()
 
-			if (queryParams.Get("label_selector") == testServersLabelSelector || queryParams.Get("name") == fmt.Sprintf(TestServerNameTemplate, 0)) {
+			if queryParams.Get("label_selector") == testServersLabelSelector || queryParams.Get("name") == fmt.Sprintf(TestServerNameTemplate, 0) {
 				if emptyOnFirstRequest && isEmptyFirstRequest {
 					isEmptyFirstRequest = false
 				} else {
-					res.Write([]byte(newJsonServerData(TestServerID, "running")))
+					response.Write([]byte(newJsonServerData(TestServerID, "running")))
 				}
 			}
-
-			res.Write([]byte(`
+			response.Write([]byte(`
 	]
 }
-			`))
-		} else if (strings.ToLower(req.Method) == "post") {
+            `))
+			if _, err := res.Write(response.Bytes()); err != nil {
+				panic(err)
+			}
+		} else if strings.ToLower(req.Method) == "post" {
 			res.WriteHeader(http.StatusCreated)
 
 			jsonData := make([]byte, req.ContentLength)
@@ -334,7 +345,9 @@ func SetupServersEndpointOnMux(mux *http.ServeMux, emptyOnFirstRequest bool) {
 			}
 
 			jsonServerData := newJsonServerData(TestServerID, "starting")
-			res.Write([]byte(fmt.Sprintf("{ \"server\": %s, \"root_password\": \"test\" }", jsonServerData)))
+			if _, err := fmt.Fprintf(res, "{ \"server\": %s, \"root_password\": \"test\" }", jsonServerData); err != nil {
+				panic(err)
+			}
 		} else {
 			panic("Unsupported HTTP method call")
 		}
@@ -352,14 +365,14 @@ func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 		res.WriteHeader(http.StatusOK)
 
 		queryParams := req.URL.Query()
-
-		res.Write([]byte(`
+		var response bytes.Buffer
+		response.Write([]byte(`
 {
 	"ssh_keys": [
 		`))
 
-		if (queryParams.Get("fingerprint") == TestSSHFingerprint) {
-			res.Write([]byte(`
+		if queryParams.Get("fingerprint") == TestSSHFingerprint {
+			response.Write([]byte(`
 {
 	"id": 42,
 	"name": "Simulated ssh key",
@@ -371,10 +384,13 @@ func SetupSshKeysEndpointOnMux(mux *http.ServeMux) {
 			`))
 		}
 
-		res.Write([]byte(`
+		response.Write([]byte(`
 	]
 }
 		`))
+		if _, err := res.Write(response.Bytes()); err != nil {
+			panic(err)
+		}
 	})
 }
 
@@ -386,10 +402,12 @@ func SetupTestPlacementGroupEndpointOnMux(mux *http.ServeMux) {
 	mux.HandleFunc(fmt.Sprintf("/placement_groups/%s", TestPlacementGroupID), func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
-		if (strings.ToLower(req.Method) == "get") {
-			res.WriteHeader(http.StatusOK)
+		if strings.ToLower(req.Method) != "get" {
+			panic("Unsupported HTTP method call")
+		}
+		res.WriteHeader(http.StatusOK)
 
-			res.Write([]byte(`
+		res.Write([]byte(`
 {
 	"placement_group": {
 		"created": "2019-01-08T12:10:00+00:00",
@@ -401,9 +419,6 @@ func SetupTestPlacementGroupEndpointOnMux(mux *http.ServeMux) {
 	}
 }
 			`))
-		} else {
-			panic("Unsupported HTTP method call")
-		}
 	})
 }
 
@@ -417,10 +432,10 @@ func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
 	mux.HandleFunc(baseURL, func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
-		if (strings.ToLower(req.Method) == "delete") {
+		if strings.ToLower(req.Method) == "delete" {
 			res.WriteHeader(http.StatusOK)
 			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(TestServerID, "shutdown_server"))))
-		} else if (strings.ToLower(req.Method) == "get") {
+		} else if strings.ToLower(req.Method) == "get" {
 			res.WriteHeader(http.StatusOK)
 			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(TestServerID, "running"))))
 		} else {
@@ -438,26 +453,26 @@ func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
 	mux.HandleFunc(fmt.Sprintf("%s/actions/add_to_placement_group", baseURL), func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
-		if (strings.ToLower(req.Method) == "post") {
-			res.WriteHeader(http.StatusCreated)
-
-			jsonData := make([]byte, req.ContentLength)
-			req.Body.Read(jsonData)
-
-			var data map[string]interface{}
-
-			jsonErr := json.Unmarshal(jsonData, &data)
-			if jsonErr != nil {
-				panic(jsonErr)
-			}
-
-			if placementGroupID, ok := data["placement_group"]; !ok || testPlacementGroupJsonValue != placementGroupID {
-				panic("Invalid HTTP method data")
-			}
-
-			res.Write([]byte("{ \"action\": {} }"))
-		} else {
+		if strings.ToLower(req.Method) != "post" {
 			panic("Unsupported HTTP method call")
 		}
+		res.WriteHeader(http.StatusCreated)
+
+		jsonData := make([]byte, req.ContentLength)
+		req.Body.Read(jsonData)
+
+		var data map[string]interface{}
+
+		jsonErr := json.Unmarshal(jsonData, &data)
+		if jsonErr != nil {
+			panic(jsonErr)
+		}
+
+		if placementGroupID, ok := data["placement_group"]; !ok || testPlacementGroupJsonValue != placementGroupID {
+			panic("Invalid HTTP method data")
+		}
+
+		res.Write([]byte("{ \"action\": {} }"))
+
 	})
 }

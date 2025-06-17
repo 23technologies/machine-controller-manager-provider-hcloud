@@ -24,13 +24,14 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"k8s.io/klog/v2"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
 )
 
 // CreateMachine handles a machine creation request
@@ -43,8 +44,8 @@ func (p *MachineProvider) CreateMachine(ctx context.Context, req *driver.CreateM
 
 	resp, err := p.createMachine(extendedCtx, req)
 
-	if nil != err {
-		p.createMachineOnErrorCleanup(extendedCtx, req, err)
+	if err != nil {
+		p.createMachineOnErrorCleanup(extendedCtx, req)
 	}
 
 	return resp, err
@@ -67,12 +68,12 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	klog.V(2).Infof("Machine creation request has been received for %q", machine.Name)
 	defer klog.V(2).Infof("Machine creation request has been processed for %q", machine.Name)
 
-	if "" != machine.Spec.ProviderID {
+	if machine.Spec.ProviderID != "" {
 		return nil, status.Error(codes.InvalidArgument, "Machine creation with existing provider ID is not supported")
 	}
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -102,13 +103,13 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	userDataBase64Enc := base64.StdEncoding.EncodeToString(userData)
 
 	image, _, err := client.Image.GetByName(ctx, imageName)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if image == nil {
 		images, err := client.Image.AllWithOpts(ctx, hcloud.ImageListOpts{Name: imageName, IncludeDeprecated: true})
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
@@ -124,14 +125,14 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	zone := providerSpec.Zone
 
 	opts := hcloud.ServerCreateOpts{
-		Name:             machine.Name,
-		ServerType:       &hcloud.ServerType{Name: providerSpec.ServerType},
-		Image:            image,
-		Labels:           map[string]string{
-			"mcm.gardener.cloud/cluster": providerSpec.Cluster,
-			"mcm.gardener.cloud/role": "node",
+		Name:       machine.Name,
+		ServerType: &hcloud.ServerType{Name: providerSpec.ServerType},
+		Image:      image,
+		Labels: map[string]string{
+			"mcm.gardener.cloud/cluster":    providerSpec.Cluster,
+			"mcm.gardener.cloud/role":       "node",
 			"topology.kubernetes.io/region": region,
-			"topology.kubernetes.io/zone": zone,
+			"topology.kubernetes.io/zone":   zone,
 		},
 		Datacenter:       &hcloud.Datacenter{Name: zone},
 		UserData:         userDataBase64Enc,
@@ -139,7 +140,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	sshKey, _, err := client.SSHKey.GetByFingerprint(ctx, providerSpec.SSHFingerprint)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	} else if sshKey == nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("SSH key with fingerprint %s not found", providerSpec.SSHFingerprint))
@@ -147,9 +148,9 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	opts.SSHKeys = append(opts.SSHKeys, sshKey)
 
-	if "" != providerSpec.NetworkName {
+	if providerSpec.NetworkName != "" {
 		network, _, err := client.Network.GetByName(ctx, providerSpec.NetworkName)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		} else if network == nil {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Network %s not found", providerSpec.NetworkName))
@@ -159,65 +160,65 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	serverResult, _, err := client.Server.Create(ctx, opts)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
 	resultData.ServerID = serverResult.Server.ID
 
 	server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	if "" != providerSpec.PlacementGroupID {
+	if providerSpec.FloatingPoolName != "" {
 		placementGroupID, err := strconv.Atoi(providerSpec.PlacementGroupID)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		placementGroup, _, err := client.PlacementGroup.GetByID(ctx, placementGroupID)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		_, _, err = client.Server.AddToPlacementGroup(ctx, server, placementGroup)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
 		server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
 
-	if "" != providerSpec.FloatingPoolName {
+	if providerSpec.FloatingPoolName != "" {
 		name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
 
 		floatingIP, _, err := client.FloatingIP.GetByName(ctx, name)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		} else if floatingIP == nil {
 			opts := hcloud.FloatingIPCreateOpts{
-				Name: &name,
-				Type: hcloud.FloatingIPTypeIPv4,
+				Name:   &name,
+				Type:   hcloud.FloatingIPTypeIPv4,
 				Server: server,
 				Labels: map[string]string{
-					"mcm.gardener.cloud/cluster": providerSpec.Cluster,
+					"mcm.gardener.cloud/cluster":                         providerSpec.Cluster,
 					"networking.hcloud.mcm.gardener.cloud/floating-pool": providerSpec.FloatingPoolName,
 				},
 			}
 
 			ipResult, _, err := client.FloatingIP.Create(ctx, opts)
-			if nil != err {
+			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 
 			resultData.FloatingIPID = ipResult.FloatingIP.ID
 
 			_, err = apis.WaitForActionsAndGetFloatingIP(ctx, client, ipResult.FloatingIP)
-			if nil != err {
+			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
@@ -225,30 +226,30 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	if hcloud.ServerStatusStarting != server.Status && hcloud.ServerStatusRunning != server.Status {
 		_, _, err = client.Server.Poweron(ctx, server)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.Aborted, err.Error())
 		}
 	}
 
 	server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// For some reason our machine was not started, return an error in this case
 	// This behavior was observed from time to time. Therefore, this check is meaningful
 	if server.Status != hcloud.ServerStatusRunning {
-		return nil, status.Error(codes.Unknown, fmt.Sprintf("Server was not started for some reason."))
+		return nil, status.Error(codes.Unknown, "Server was not started for some reason.")
 	}
 
 	// Compare running results with expectation
 	unexpectedState := ""
 
-	if "" != providerSpec.FloatingPoolName && len(server.PublicNet.FloatingIPs) != 1 {
+	if providerSpec.FloatingPoolName != "" && len(server.PublicNet.FloatingIPs) != 1 {
 		unexpectedState = "Floating IP set-up failed"
 	}
 
-	if "" != providerSpec.NetworkName && len(server.PrivateNet) != 1 {
+	if providerSpec.NetworkName != "" && len(server.PrivateNet) != 1 {
 		unexpectedState = "Private network set-up failed"
 	}
 
@@ -278,7 +279,7 @@ func (p *MachineProvider) createMachineValidateDeploymentAndCleanup(ctx context.
 	)
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
-	if nil != err {
+	if err != nil {
 		return false
 	}
 
@@ -288,7 +289,7 @@ func (p *MachineProvider) createMachineValidateDeploymentAndCleanup(ctx context.
 		isCleanupAvailable = false
 	}
 
-	if roleLabel, ok := server.Labels["mcm.gardener.cloud/role"]; !ok || "node" != roleLabel {
+	if roleLabel, ok := server.Labels["mcm.gardener.cloud/role"]; !ok || roleLabel != "node" {
 		isCleanupAvailable = false
 	}
 
@@ -302,13 +303,13 @@ func (p *MachineProvider) createMachineValidateDeploymentAndCleanup(ctx context.
 		isCleanupAvailable = false
 	}
 
-	if (isCleanupAvailable) {
+	if isCleanupAvailable {
 		client := apis.GetClientForToken(string(req.Secret.Data["token"]))
 		resultData := ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
 
 		resultData.ServerID = server.ID
 
-		if "" != providerSpec.FloatingPoolName {
+		if providerSpec.FloatingPoolName != "" {
 			name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
 
 			floatingIP, _, _ := client.FloatingIP.GetByName(ctx, name)
@@ -327,18 +328,18 @@ func (p *MachineProvider) createMachineValidateDeploymentAndCleanup(ctx context.
 // ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The create request for VM creation
 // err error                        Error encountered
-func (p *MachineProvider) createMachineOnErrorCleanup(ctx context.Context, req *driver.CreateMachineRequest, err error) {
+func (p *MachineProvider) createMachineOnErrorCleanup(ctx context.Context, req *driver.CreateMachineRequest) {
 	client := apis.GetClientForToken(string(req.Secret.Data["token"]))
 	resultData := ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
 
-  server := &hcloud.Server{}
+	var server *hcloud.Server
 	if resultData.ServerID != 0 {
 		server, _, _ = client.Server.GetByID(ctx, resultData.ServerID)
 	} else {
 		server, _, _ = client.Server.GetByName(ctx, req.Machine.Name)
 	}
 	if nil != server {
-			_, _ = client.Server.Delete(ctx, server)
+		_, _ = client.Server.Delete(ctx, server)
 	}
 
 	if resultData.FloatingIPID != 0 {
@@ -368,23 +369,25 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var server *hcloud.Server
 	if machine.Spec.ProviderID != "" {
-
 		serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		server, _, err = client.Server.GetByID(ctx, serverID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	} else {
 		server, _, err = client.Server.GetByName(ctx, machine.Name)
 	}
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	} else if server == nil {
 		klog.V(3).Infof("VM %s does not exist", machine.Name)
@@ -392,19 +395,19 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 	}
 
 	_, err = client.Server.Delete(ctx, server)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
-	if "" != providerSpec.FloatingPoolName {
+	if providerSpec.FloatingPoolName != "" {
 		name := fmt.Sprintf("%s-%s-ipv4", providerSpec.FloatingPoolName, machine.Name)
 
 		floatingIP, _, err := client.FloatingIP.GetByName(ctx, name)
-		if nil != err {
+		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		} else if nil != floatingIP {
 			_, err = client.FloatingIP.Delete(ctx, floatingIP)
-			if nil != err {
+			if err != nil {
 				return nil, status.Error(codes.Unavailable, err.Error())
 			}
 		}
@@ -420,12 +423,12 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 // req *driver.CreateMachineRequest The get request for VM info
 func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetMachineStatusRequest) (*driver.GetMachineStatusResponse, error) {
 	var (
-		err      error
-		machine  = req.Machine
-		secret   = req.Secret
+		err          error
+		machine      = req.Machine
+		secret       = req.Secret
 		machineClass = req.MachineClass
-		server   *hcloud.Server
-		serverID int
+		server       *hcloud.Server
+		serverID     int
 	)
 
 	// Log messages to track start and end of request
@@ -433,7 +436,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 	defer klog.V(2).Infof("Machine get request has been processed successfully for %q", machine.Name)
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -455,16 +458,19 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		}
 
 		server, _, err = client.Server.GetByID(ctx, serverID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.Unavailable, err.Error())
 	} else if server == nil {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("VM %s (%d) does not exist", machine.Name, serverID))
 	}
 
 	providerID := transcoder.EncodeProviderID(providerSpec.Zone, serverID)
-	return &driver.GetMachineStatusResponse{ ProviderID: providerID, NodeName: server.Name }, nil
+	return &driver.GetMachineStatusResponse{ProviderID: providerID, NodeName: server.Name}, nil
 }
 
 // ListMachines lists all the machines possibilly created by a providerSpec
@@ -479,7 +485,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 	)
 
 	providerSpec, err := transcoder.DecodeProviderSpecFromMachineClass(machineClass, secret)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -497,12 +503,12 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 				url.QueryEscape(providerSpec.Cluster),
 				url.QueryEscape(zone),
 			),
-			PerPage:       50,
+			PerPage: 50,
 		},
 	}
 
 	servers, err := client.Server.AllWithOpts(ctx, listopts)
-	if nil != err {
+	if err != nil {
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
@@ -512,7 +518,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 		listOfVMs[transcoder.EncodeProviderID(zone, server.ID)] = server.Name
 	}
 
-	return &driver.ListMachinesResponse{ MachineList: listOfVMs }, nil
+	return &driver.ListMachinesResponse{MachineList: listOfVMs}, nil
 }
 
 // GetVolumeIDs returns a list of Volume IDs for all PV Specs for whom an provider volume was found
@@ -520,7 +526,7 @@ func (p *MachineProvider) ListMachines(ctx context.Context, req *driver.ListMach
 // PARAMETERS
 // ctx context.Context              Execution context
 // req *driver.CreateMachineRequest The request object to get a list of VolumeIDs for a PVSpec
-func (p *MachineProvider) GetVolumeIDs(ctx context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
+func (p *MachineProvider) GetVolumeIDs(_ context.Context, req *driver.GetVolumeIDsRequest) (*driver.GetVolumeIDsResponse, error) {
 	// Log messages to track start and end of request
 	klog.V(2).Infof("GetVolumeIDs request has been received for %q", req.PVSpecs)
 	defer klog.V(2).Infof("GetVolumeIDs request has been processed successfully for %q", req.PVSpecs)
@@ -528,15 +534,7 @@ func (p *MachineProvider) GetVolumeIDs(ctx context.Context, req *driver.GetVolum
 	return &driver.GetVolumeIDsResponse{}, status.Error(codes.Unimplemented, "")
 }
 
-// GenerateMachineClassForMigration helps in migration of one kind of machineClass CR to another kind.
-//
-// PARAMETERS
-// ctx context.Context              Execution context
-// req *driver.CreateMachineRequest The request for generating the generic machineClass
-func (p *MachineProvider) GenerateMachineClassForMigration(ctx context.Context, req *driver.GenerateMachineClassForMigrationRequest) (*driver.GenerateMachineClassForMigrationResponse, error) {
-	// Log messages to track start and end of request
-	klog.V(2).Infof("MigrateMachineClass request has been received for %q", req.ClassSpec)
-	defer klog.V(2).Infof("MigrateMachineClass request has been processed successfully for %q", req.ClassSpec)
-
-	return &driver.GenerateMachineClassForMigrationResponse{}, status.Error(codes.Unimplemented, "")
+// InitializeMachine handles VM initialization for hcloud VM's. Currently, un-implemented.
+func (p *MachineProvider) InitializeMachine(_ context.Context, _ *driver.InitializeMachineRequest) (*driver.InitializeMachineResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "Hcloud Provider does not yet implement InitializeMachine")
 }

@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/cmd"
 	_ "github.com/gardener/machine-controller-manager/pkg/util/client/metrics/prometheus" // for client metric registration
 	"github.com/spf13/pflag"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/cmd"
 )
 
 // main is the executable entry point.

@@ -18,7 +18,6 @@ limitations under the License.
 package hcloud
 
 import (
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,9 +26,10 @@ import (
 var _ = Describe("Plugin", func() {
 	Describe("#NewHCloudProvider", func() {
 		It("should correctly create a new provider object", func() {
-			provider := NewHCloudProvider(&spi.PluginSPIImpl{})
+			provider := NewHCloudProvider()
+			Expect(provider).NotTo(BeNil(), "NewHCloudProvider should not return nil")
 			_, ok := provider.(driver.Driver)
-			Expect(ok).To(BeTrue())
+			Expect(ok).To(BeTrue(), "The returned provider should implement driver.Driver")
 		})
 	})
 })

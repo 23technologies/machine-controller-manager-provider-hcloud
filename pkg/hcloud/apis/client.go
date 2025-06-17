@@ -35,7 +35,7 @@ func GetClientForToken(token string) *hcloud.Client {
 	// if one accidentially copies a newline character into the token, remove it!
 	if strings.Contains(token, "\n") {
 		klog.InfoS("Your HCloud token contains a newline character. I will remove it for you but you should consider to remove it.")
-		token = strings.Replace(token, "\n", "", -1)
+		token = strings.ReplaceAll(token, "\n", "")
 	}
 
 	client, ok := singletons[token]

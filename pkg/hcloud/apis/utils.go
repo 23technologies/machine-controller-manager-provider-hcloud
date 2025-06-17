@@ -31,6 +31,7 @@ import (
 
 // Constant defaultMachineOperationInterval is the time to wait between retries
 const defaultMachineOperationInterval = 5 * time.Second
+
 // Constant defaultMachineOperationRetries is the maximum number of retries
 const defaultMachineOperationRetries = 5
 
@@ -65,7 +66,7 @@ func waitForActionsOfRequest(ctx context.Context, client *hcloud.Client, req *ht
 
 		if repeat {
 			if tryCount > defaultMachineOperationRetries {
-				return errors.New("Maximum number of retries exceeded waiting for actions")
+				return errors.New("maximum number of retries exceeded waiting for actions")
 			}
 
 			time.Sleep(defaultMachineOperationInterval)

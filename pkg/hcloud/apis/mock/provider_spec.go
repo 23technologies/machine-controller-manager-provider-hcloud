@@ -22,12 +22,12 @@ import (
 )
 
 const (
-	TestCluster = "xyz"
-	TestImageName = "ubuntu-20.04"
-	TestProviderSpec = "{\"cluster\":\"xyz\",\"zone\":\"hel1-dc2\",\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"placementGroupID\":\"42\",\"sshFingerprint\":\"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff\"}"
-	TestServerType = "cx11-ceph"
-	TestSSHFingerprint = "00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff"
-	TestZone = "hel1-dc2"
+	TestCluster             = "xyz"
+	TestImageName           = "ubuntu-20.04"
+	TestProviderSpec        = "{\"cluster\":\"xyz\",\"zone\":\"hel1-dc2\",\"imageName\":\"ubuntu-20.04\",\"serverType\":\"cx11-ceph\",\"placementGroupID\":\"42\",\"sshFingerprint\":\"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff\"}"
+	TestServerType          = "cx11-ceph"
+	TestSSHFingerprint      = "00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff"
+	TestZone                = "hel1-dc2"
 	TestInvalidProviderSpec = "{\"test\":\"invalid\"}"
 )
 
@@ -47,11 +47,11 @@ func ManipulateProviderSpec(providerSpec *apis.ProviderSpec, data map[string]int
 // NewProviderSpec generates a new provider specification for testing purposes.
 func NewProviderSpec() *apis.ProviderSpec {
 	return &apis.ProviderSpec{
-		Cluster: TestCluster,
-		Zone: TestZone,
-		ImageName: TestImageName,
-		ServerType: TestServerType,
-		SSHFingerprint: TestSSHFingerprint,
+		Cluster:          TestCluster,
+		Zone:             TestZone,
+		ImageName:        TestImageName,
+		ServerType:       TestServerType,
+		SSHFingerprint:   TestSSHFingerprint,
 		PlacementGroupID: TestPlacementGroupID,
 	}
 }

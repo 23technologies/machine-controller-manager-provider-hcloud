@@ -19,8 +19,10 @@ package validation
 
 import (
 	"fmt"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 )
 
 // ValidateHCloudProviderSpec validates provider specification and secret to check if all fields are present and valid
@@ -31,19 +33,19 @@ import (
 func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret) []error {
 	var allErrs []error
 
-	if "" == spec.Cluster {
+	if spec.Cluster == "" {
 		allErrs = append(allErrs, fmt.Errorf("cluster is a required field"))
 	}
-	if "" == spec.Zone {
+	if spec.Zone == "" {
 		allErrs = append(allErrs, fmt.Errorf("zone is a required field"))
 	}
-	if "" == spec.ImageName {
+	if spec.ImageName == "" {
 		allErrs = append(allErrs, fmt.Errorf("imageName is a required field"))
 	}
-	if "" == spec.ServerType {
+	if spec.ServerType == "" {
 		allErrs = append(allErrs, fmt.Errorf("serverType is a required field"))
 	}
-	if "" == spec.SSHFingerprint {
+	if spec.SSHFingerprint == "" {
 		allErrs = append(allErrs, fmt.Errorf("sshFingerprint is a required field"))
 	}
 	//allErrs = append(allErrs, ValidateSecret(secret)...)
