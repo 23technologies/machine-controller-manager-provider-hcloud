@@ -18,21 +18,16 @@ limitations under the License.
 package hcloud
 
 import (
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 )
 
 // MachineProvider is the struct that implements the driver interface
 type MachineProvider struct {
-	SPI spi.SessionProviderInterface
 }
 
 // NewHCloudProvider returns a provider object.
 //
 // PARAMETERS
-// spi spi.SessionProviderInterface Session provider interface to attach
-func NewHCloudProvider(spi spi.SessionProviderInterface) driver.Driver {
-	return &MachineProvider{
-		SPI: spi,
-	}
+func NewHCloudProvider() driver.Driver {
+	return &MachineProvider{}
 }

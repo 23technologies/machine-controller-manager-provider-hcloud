@@ -3,16 +3,16 @@
 /.kube-secrets
 /tmp/*
 /dev
-/test
-/logs
-
-*.html
+/hack/tools/bin
+.env
 .vscode
 .idea
 *.DS_Store
 *amd64
+*.html
 main
 
 # Output of the go coverage tool
-*coverprofile.*
-
+*coverprofile.out*
+.ci/controllers-test/logs/*
+test/integration/controller/controller.test

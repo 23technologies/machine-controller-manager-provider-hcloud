@@ -18,7 +18,7 @@ limitations under the License.
 package hcloud
 
 type CreateMachineMethodData struct {
-	ServerID int
+	ServerID     int
 	FloatingIPID int
 }
 

@@ -18,8 +18,6 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	_ "github.com/gardener/machine-controller-manager/pkg/util/client/metrics/prometheus" // for client metric registration
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/app"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/app/options"
@@ -27,6 +25,8 @@ import (
 	"k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
 	"k8s.io/component-base/version/verflag"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud"
 )
 
 // RunProviderHCloudManager runs the HCloud machine controller server.
@@ -44,5 +44,5 @@ func RunProviderHCloudManager(args *pflag.FlagSet) error {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
-	return app.Run(s, hcloud.NewHCloudProvider(&spi.PluginSPIImpl{}))
+	return app.Run(s, hcloud.NewHCloudProvider())
 }

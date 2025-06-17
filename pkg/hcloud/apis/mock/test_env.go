@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	TestPlacementGroupID = "42"
+	TestPlacementGroupID        = "42"
 	testPlacementGroupJsonValue = float64(42)
 )
 

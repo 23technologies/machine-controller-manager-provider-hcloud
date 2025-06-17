@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 )
 
 var _ = Describe("ProviderID", func() {

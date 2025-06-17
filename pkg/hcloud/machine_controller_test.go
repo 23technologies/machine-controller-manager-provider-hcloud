@@ -20,9 +20,6 @@ package hcloud
 import (
 	"context"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/spi"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
@@ -30,14 +27,15 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 )
 
 var provider *MachineProvider
 
 var _ = BeforeSuite(func() {
-	provider = &MachineProvider {
-		SPI: &spi.PluginSPIImpl{},
-	}
+	provider = &MachineProvider{}
 })
 
 var _ = Describe("MachineController", func() {
@@ -126,21 +124,21 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errStatus:         codes.InvalidArgument,
 				},
 			}),
 			Entry("contains an invalid provider ID", &data{
 				setup: setup{},
 				action: action{
 					&driver.CreateMachineRequest{
-						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": "test:///invalid"}),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errStatus:         codes.InvalidArgument,
 				},
 			}),
 			Entry("contains an invalid machine class", &data{
@@ -154,7 +152,7 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errStatus:         codes.InvalidArgument,
 				},
 			}),
 		)
@@ -226,14 +224,14 @@ var _ = Describe("MachineController", func() {
 				setup: setup{},
 				action: action{
 					&driver.DeleteMachineRequest{
-						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": "test:///invalid"}),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errStatus:         codes.InvalidArgument,
 				},
 			}),
 		)
@@ -299,21 +297,21 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.NotFound,
+					errStatus:         codes.NotFound,
 				},
 			}),
 			Entry("contains an invalid provider ID", &data{
 				setup: setup{},
 				action: action{
 					&driver.GetMachineStatusRequest{
-						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{ "Spec.ProviderID": "test:///invalid" }),
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": "test:///invalid"}),
 						MachineClass: mock.NewMachineClass(),
 						Secret:       providerSecret,
 					},
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errStatus:         codes.InvalidArgument,
 				},
 			}),
 		)
@@ -376,7 +374,7 @@ var _ = Describe("MachineController", func() {
 				},
 				expect: expect{
 					errToHaveOccurred: true,
-					errStatus: codes.InvalidArgument,
+					errStatus:         codes.InvalidArgument,
 				},
 			}),
 		)
@@ -402,20 +400,6 @@ var _ = Describe("MachineController", func() {
 			}
 
 			_, err := provider.GetVolumeIDs(ctx, req)
-			Expect(err).To(HaveOccurred())
-
-			errStatus, ok := err.(*status.Status)
-			Expect(ok).To(BeTrue())
-			Expect(errStatus.Code()).To(Equal(codes.Unimplemented))
-		})
-	})
-
-	Describe("#GenerateMachineClassForMigration", func() {
-		It("is not implemented", func() {
-			ctx := context.Background()
-			req := &driver.GenerateMachineClassForMigrationRequest{}
-
-			_, err := provider.GenerateMachineClassForMigration(ctx, req)
 			Expect(err).To(HaveOccurred())
 
 			errStatus, ok := err.(*status.Status)

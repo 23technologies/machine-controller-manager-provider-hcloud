@@ -20,11 +20,12 @@ package validation
 import (
 	"fmt"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 )
 
 var _ = Describe("Validation", func() {
@@ -69,7 +70,7 @@ var _ = Describe("Validation", func() {
 			Entry("Simple validation of HCloud machine class", &data{
 				setup: setup{},
 				action: action{
-					spec: mock.NewProviderSpec(),
+					spec:   mock.NewProviderSpec(),
 					secret: providerSecret,
 				},
 				expect: expect{
@@ -80,9 +81,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Zone: mock.TestZone,
-						ImageName: mock.TestImageName,
-						ServerType: mock.TestServerType,
+						Zone:           mock.TestZone,
+						ImageName:      mock.TestImageName,
+						ServerType:     mock.TestServerType,
 						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
@@ -98,9 +99,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestCluster,
-						ImageName: mock.TestImageName,
-						ServerType: mock.TestServerType,
+						Cluster:        mock.TestCluster,
+						ImageName:      mock.TestImageName,
+						ServerType:     mock.TestServerType,
 						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
@@ -116,9 +117,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestCluster,
-						Zone: mock.TestZone,
-						ServerType: mock.TestServerType,
+						Cluster:        mock.TestCluster,
+						Zone:           mock.TestZone,
+						ServerType:     mock.TestServerType,
 						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
@@ -134,9 +135,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestCluster,
-						Zone: mock.TestZone,
-						ImageName: mock.TestImageName,
+						Cluster:        mock.TestCluster,
+						Zone:           mock.TestZone,
+						ImageName:      mock.TestImageName,
 						SSHFingerprint: mock.TestSSHFingerprint,
 					},
 					secret: providerSecret,
@@ -152,9 +153,9 @@ var _ = Describe("Validation", func() {
 				setup: setup{},
 				action: action{
 					spec: &apis.ProviderSpec{
-						Cluster: mock.TestCluster,
-						Zone: mock.TestZone,
-						ImageName: mock.TestImageName,
+						Cluster:    mock.TestCluster,
+						Zone:       mock.TestZone,
+						ImageName:  mock.TestImageName,
 						ServerType: mock.TestServerType,
 					},
 					secret: providerSecret,

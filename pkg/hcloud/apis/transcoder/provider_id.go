@@ -21,11 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 	"strconv"
+	"strings"
 )
 
-// ProviderSpec is the spec to be used while parsing the calls.
+// ServerData describes a server
 type ServerData struct {
 	ID   int
 	Zone string
