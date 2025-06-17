@@ -61,7 +61,7 @@ start:
 
 .PHONY: install
 install:
-	@LD_FLAGS="-w -X github.com/gardener/$(NAME)/pkg/version.Version=$(VERSION)" \
+	@LD_FLAGS="-w -X github.com/23technologies/$(NAME)/pkg/version.Version=$(VERSION)" \
 	bash $(GARDENER_HACK_DIR)/install.sh ./...
 
 .PHONY: generate
