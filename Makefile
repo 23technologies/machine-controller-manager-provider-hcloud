@@ -1,101 +1,123 @@
-# Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
+# SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-BINARY_PATH        := bin/
-COVERPROFILE       := test/output/coverprofile.out
-PROVIDER_NAME      := HCloud
-REPO_ROOT          := $(shell dirname $(realpath $(lastword ${MAKEFILE_LIST})))
-VERSION            := $(shell cat "${REPO_ROOT}/VERSION")
-LD_FLAGS           := "-w $(shell hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION)"
-CONTROL_NAMESPACE  := default
-CONTROL_KUBECONFIG := dev/control-kubeconfig.yaml
-TARGET_KUBECONFIG  := dev/target-kubeconfig.yaml
+ENSURE_GARDENER_MOD := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
+GARDENER_HACK_DIR   := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+
+
+REPO_ROOT           := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+HACK_DIR            := $(REPO_ROOT)/hack
+COVERPROFILE        := test/output/coverprofile.out
+NAME                := machine-controller-manager-provider-hcloud
+IMAGE_NAME          := $(IMAGE_PREFIX)/$(NAME)
+VERSION             := $(shell cat VERSION)
+
+LEADER_ELECT 	    := "true"
+# If Integration Test Suite is to be run locally against clusters then export the below variable
+# with MCM deployment name in the cluster
+MACHINE_CONTROLLER_MANAGER_DEPLOYMENT_NAME := machine-controller-manager
+PLATFORM ?= linux/amd64
 
 #########################################
+# Tools & Cleanup
+#########################################
+
+TOOLS_DIR := $(HACK_DIR)/tools
+include $(GARDENER_HACK_DIR)/tools.mk
+-include .env
+
+.PHONY: tidy
+tidy:
+	@go mod tidy
+	@mkdir -p $(REPO_ROOT)/.ci/hack && cp $(GARDENER_HACK_DIR)/.ci/* $(REPO_ROOT)/.ci/hack/ && chmod +xw $(REPO_ROOT)/.ci/hack/*
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(REPO_ROOT)/hack/update-github-templates.sh
+	@cp $(GARDENER_HACK_DIR)/cherry-pick-pull.sh $(HACK_DIR)/cherry-pick-pull.sh && chmod +xw $(HACK_DIR)/cherry-pick-pull.sh
+
+#################################################
 # Rules for starting machine-controller locally
-#########################################
+#################################################
 
 .PHONY: start
 start:
-	@GO111MODULE=on go run \
-			-mod=vendor \
-		    -ldflags ${LD_FLAGS} \
-			cmd/machine-controller-manager-provider-hcloud/main.go \
-			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
-			--target-kubeconfig=$(TARGET_KUBECONFIG) \
-			--namespace=$(CONTROL_NAMESPACE) \
-			--machine-creation-timeout=20m \
-			--machine-drain-timeout=5m \
-			--machine-health-timeout=10m \
-			--machine-pv-detach-timeout=2m \
-			--machine-safety-apiserver-statuscheck-timeout=30s \
-			--machine-safety-apiserver-statuscheck-period=1m \
-			--machine-safety-orphan-vms-period=30m \
-			--v=5
+	go run \
+		cmd/machine-controller/main.go \
+		--control-kubeconfig=$(CONTROL_KUBECONFIG) \
+		--target-kubeconfig=$(TARGET_KUBECONFIG) \
+		--namespace=$(CONTROL_NAMESPACE) \
+		--machine-creation-timeout=20m \
+		--machine-drain-timeout=5m \
+		--machine-health-timeout=10m \
+		--machine-pv-detach-timeout=2m \
+		--machine-safety-apiserver-statuscheck-timeout=30s \
+		--machine-safety-apiserver-statuscheck-period=1m \
+		--machine-safety-orphan-vms-period=30m \
+		--leader-elect=$(LEADER_ELECT) \
+		--v=3
 
-.PHONY: debug
-debug:
-			dlv debug cmd/machine-controller-manager-provider-hcloud/main.go --\
-			--control-kubeconfig=$(CONTROL_KUBECONFIG) \
-			--target-kubeconfig=$(TARGET_KUBECONFIG) \
-			--namespace=$(CONTROL_NAMESPACE) \
-			--machine-creation-timeout=20m \
-			--machine-drain-timeout=5m \
-			--machine-health-timeout=10m \
-			--machine-pv-detach-timeout=2m \
-			--machine-safety-apiserver-statuscheck-timeout=30s \
-			--machine-safety-apiserver-statuscheck-period=1m \
-			--machine-safety-orphan-vms-period=30m \
-			--v=5
+#####################################################################
+# Rules for verification, formatting, linting, testing and cleaning
+#####################################################################
 
-#########################################
-# Rules for re-vendoring
-#########################################
+.PHONY: install
+install:
+	@LD_FLAGS="-w -X github.com/gardener/$(NAME)/pkg/version.Version=$(VERSION)" \
+	bash $(GARDENER_HACK_DIR)/install.sh ./...
 
-.PHONY: revendor
-revendor:
-	@GO111MODULE=on go mod tidy -compat=1.17
-	@GO111MODULE=on go mod vendor
+.PHONY: generate
+generate: $(VGOPATH) $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN)
+	@REPO_ROOT=$(REPO_ROOT) VGOPATH=$(VGOPATH) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./cmd/... ./pkg/...
+	$(MAKE) format
 
-#########################################
-# Rules for testing
-#########################################
+.PHONY: check-generate
+check-generate:
+	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
+
+.PHONY: format
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
+	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg ./test
+
+.PHONY: sast
+sast: $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh
+
+.PHONY: sast-report
+sast-report: $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh --gosec-report true
+
+.PHONY: check
+check: $(GO_ADD_LICENSE) $(GOIMPORTS) $(GOLANGCI_LINT)
+	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
+
+	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
+	@bash $(GARDENER_HACK_DIR)/check-license-header.sh
 
 .PHONY: test
 test:
-	@hack/test.sh
+	@SKIP_FETCH_TOOLS=1 bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./pkg/...
 
 .PHONY: test-cov
 test-cov:
-	@hack/test.sh --coverage
+	@SKIP_FETCH_TOOLS=1 bash $(GARDENER_HACK_DIR)/test-cover.sh ./cmd/... ./pkg/...
 
 .PHONY: test-clean
 test-clean:
-	@hack/test.sh --clean --coverage
+	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
-#########################################
-# Rules for build/release
-#########################################
+.PHONY: verify
+verify: check format test sast
 
-.PHONY: build-local
-build-local:
-	@env LD_FLAGS=${LD_FLAGS} LOCAL_BUILD=1 hack/build.sh
-
-.PHONY: build
-build:
-	@env LD_FLAGS=${LD_FLAGS} hack/build.sh
+.PHONY: verify-extended
+verify-extended: check-generate check format test-cov test-clean sast-report
 
 .PHONY: clean
 clean:
-	@rm -rf bin/
+	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./pkg/...
+
+.PHONY: test-integration
+test-integration:
+	.ci/local_integration_test
+
+.PHONY: add-license-headers
+add-license-headers: $(GO_ADD_LICENSE)
+	@bash $(GARDENER_HACK_DIR)/add-license-header.sh
