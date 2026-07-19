@@ -28,4 +28,11 @@ type ProviderSpec struct {
 	PlacementGroupID string `json:"placementGroupID,omitempty"`
 	FloatingPoolName string `json:"floatingPoolName,omitempty"`
 	NetworkName      string `json:"networkName,omitempty"`
+
+	// Tags are additional labels applied to the created Hetzner server. The extension
+	// supplies mcm.gardener.cloud/cluster and mcm.gardener.cloud/role here.
+	Tags map[string]string `json:"tags,omitempty"`
+	// ExtraConfig carries per-machine-type "additional VM options" from the CloudProfile's
+	// MachineTypeOptions. Reserved: currently accepted but not applied (no Hetzner semantic yet).
+	ExtraConfig map[string]string `json:"extraConfig,omitempty"`
 }

@@ -139,6 +139,10 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 		StartAfterCreate: &startAfterCreate,
 	}
 
+	for k, v := range providerSpec.Tags {
+		opts.Labels[k] = v
+	}
+
 	sshKey, _, err := client.SSHKey.GetByFingerprint(ctx, providerSpec.SSHFingerprint)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
