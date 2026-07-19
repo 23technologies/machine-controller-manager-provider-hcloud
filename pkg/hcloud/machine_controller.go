@@ -30,8 +30,8 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"k8s.io/klog/v2"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
 )
 
 // CreateMachine handles a machine creation request

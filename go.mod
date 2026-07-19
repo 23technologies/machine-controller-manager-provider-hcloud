@@ -1,4 +1,4 @@
-module github.com/23technologies/machine-controller-manager-provider-hcloud
+module github.com/opendefensecloud/machine-controller-manager-provider-hcloud
 
 go 1.24.0
 
