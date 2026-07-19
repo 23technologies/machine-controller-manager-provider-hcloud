@@ -9,6 +9,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout commit
@@ -27,6 +29,9 @@ jobs:
 
   on-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout commit
@@ -47,5 +52,5 @@ jobs:
         with:
           push: true
           tags: |
-            ghcr.io/23technologies/machine-controller-manager-provider-hcloud:latest
-            ghcr.io/23technologies/machine-controller-manager-provider-hcloud:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/machine-controller-manager-provider-hcloud:latest
+            ghcr.io/${{ github.repository_owner }}/machine-controller-manager-provider-hcloud:${{ github.ref_name }}
