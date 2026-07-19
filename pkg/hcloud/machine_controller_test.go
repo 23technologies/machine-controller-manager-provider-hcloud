@@ -57,6 +57,7 @@ var _ = Describe("MachineController", func() {
 		mock.SetupSshKeysEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestPlacementGroupEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestServerEndpointOnMux(mockTestEnv.Mux)
+		mock.ResetPlacementGroupHitCounters()
 	})
 
 	var _ = AfterEach(func() {
@@ -156,6 +157,22 @@ var _ = Describe("MachineController", func() {
 				},
 			}),
 		)
+
+		It("applies the placement group when PlacementGroupID is set without a floating pool", func() {
+			ctx := context.Background()
+
+			// TestProviderSpec carries placementGroupID "42" and no floatingPoolName,
+			// so the placement-group flow must be driven by PlacementGroupID alone.
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       providerSecret,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(mock.PlacementGroupGetByIDHitCount()).To(BeNumerically(">", 0), "expected GET /placement_groups/42 to be hit")
+			Expect(mock.AddToPlacementGroupHitCount()).To(BeNumerically(">", 0), "expected add_to_placement_group action to be hit")
+		})
 	})
 
 	Describe("#DeleteMachine", func() {

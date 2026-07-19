@@ -175,7 +175,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	if providerSpec.FloatingPoolName != "" {
+	if providerSpec.PlacementGroupID != "" {
 		placementGroupID, err := strconv.ParseInt(providerSpec.PlacementGroupID, 10, 64)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -183,7 +183,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 		placementGroup, _, err := client.PlacementGroup.GetByID(ctx, placementGroupID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
 		_, _, err = client.Server.AddToPlacementGroup(ctx, server, placementGroup)
@@ -191,7 +191,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
-		server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
+		server, err = apis.WaitForActionsAndGetServer(ctx, client, server)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
