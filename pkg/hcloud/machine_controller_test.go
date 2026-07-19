@@ -173,6 +173,44 @@ var _ = Describe("MachineController", func() {
 			Expect(mock.PlacementGroupGetByIDHitCount()).To(BeNumerically(">", 0), "expected GET /placement_groups/42 to be hit")
 			Expect(mock.AddToPlacementGroupHitCount()).To(BeNumerically(">", 0), "expected add_to_placement_group action to be hit")
 		})
+
+		It("does not delete a foreign server that merely shares a name (never deletes by name)", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "cleanup-foreign-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupImagesEndpointOnMux(env.Mux)
+			mock.SetupSshKeysEndpointOnMux(env.Mux)
+			mock.SetupFloatingIPsEndpointOnMux(env.Mux)
+			// emptyOnFirstRequest=false: GetByName finds a server named "machine-0"
+			// immediately. That fixture server carries no labels, so it does not match
+			// this request's providerSpec labels and createMachineValidateDeploymentAndCleanup
+			// correctly treats it as foreign (not created by this request).
+			mock.SetupServersEndpointOnMux(env.Mux, false)
+			mock.SetupTestServerEndpointOnMux(env.Mux)
+			mock.ResetServerDeleteHitCounter()
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(mock.ServerDeleteHitCount()).To(Equal(int32(0)), "create-error cleanup must never delete a server found only by name")
+		})
 	})
 
 	Describe("#DeleteMachine", func() {

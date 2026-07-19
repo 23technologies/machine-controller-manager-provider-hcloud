@@ -56,6 +56,21 @@ func AddToPlacementGroupHitCount() int32 {
 	return atomic.LoadInt32(&addToPlacementGroupHits)
 }
 
+// serverDeleteHits counts how many times DELETE /servers/{id} was hit via the endpoint
+// registered by SetupTestServerEndpointOnMux. Tests use this to prove that create-error
+// cleanup never deletes a server it did not itself create.
+var serverDeleteHits int32
+
+// ResetServerDeleteHitCounter resets the server-delete hit counter.
+func ResetServerDeleteHitCounter() {
+	atomic.StoreInt32(&serverDeleteHits, 0)
+}
+
+// ServerDeleteHitCount returns how many times DELETE /servers/{id} was hit.
+func ServerDeleteHitCount() int32 {
+	return atomic.LoadInt32(&serverDeleteHits)
+}
+
 const (
 	jsonImageData = `
 {
@@ -461,6 +476,7 @@ func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
 		if strings.ToLower(req.Method) == "delete" {
+			atomic.AddInt32(&serverDeleteHits, 1)
 			res.WriteHeader(http.StatusOK)
 			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(TestServerID, "shutdown_server"))))
 		} else if strings.ToLower(req.Method) == "get" {
