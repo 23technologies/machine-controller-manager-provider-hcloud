@@ -27,7 +27,7 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
-	"github.com/hetznercloud/hcloud-go/hcloud"
+	"github.com/hetznercloud/hcloud-go/v2/hcloud"
 	"k8s.io/klog/v2"
 
 	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
@@ -172,7 +172,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	}
 
 	if providerSpec.FloatingPoolName != "" {
-		placementGroupID, err := strconv.Atoi(providerSpec.PlacementGroupID)
+		placementGroupID, err := strconv.ParseInt(providerSpec.PlacementGroupID, 10, 64)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -428,7 +428,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		secret       = req.Secret
 		machineClass = req.MachineClass
 		server       *hcloud.Server
-		serverID     int
+		serverID     int64
 	)
 
 	// Log messages to track start and end of request

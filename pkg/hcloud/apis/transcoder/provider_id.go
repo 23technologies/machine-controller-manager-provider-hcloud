@@ -27,7 +27,7 @@ import (
 
 // ServerData describes a server
 type ServerData struct {
-	ID   int
+	ID   int64
 	Zone string
 }
 
@@ -48,7 +48,7 @@ func DecodeServerDataFromProviderID(providerID string) (*ServerData, error) {
 		return nil, errors.New("ProviderID given contains an invalid URL")
 	}
 
-	serverID, err := strconv.Atoi(providerIDData[1])
+	serverID, err := strconv.ParseInt(providerIDData[1], 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("ServerID found is invalid: %v", err)
 	}
@@ -65,7 +65,7 @@ func DecodeServerDataFromProviderID(providerID string) (*ServerData, error) {
 //
 // PARAMETERS
 // providerID string Provider ID to parse
-func DecodeServerIDFromProviderID(providerID string) (int, error) {
+func DecodeServerIDFromProviderID(providerID string) (int64, error) {
 	serverData, err := DecodeServerDataFromProviderID(providerID)
 	if err != nil {
 		return -1, err
@@ -84,7 +84,7 @@ func DecodeServerIDAsStringFromProviderID(providerID string) (string, error) {
 		return "", err
 	}
 
-	return strconv.Itoa(serverData.ID), nil
+	return strconv.FormatInt(serverData.ID, 10), nil
 }
 
 // DecodeZoneFromProviderID decodes the given ProviderID to extract the datacenter zone.
@@ -104,7 +104,7 @@ func DecodeZoneFromProviderID(providerID string) (string, error) {
 //
 // PARAMETERS
 // zone     string Datacenter zone
-// serverID string Server ID
-func EncodeProviderID(zone string, serverID int) string {
+// serverID int64  Server ID
+func EncodeProviderID(zone string, serverID int64) string {
 	return fmt.Sprintf("hcloud:///%s/%d", url.PathEscape(zone), serverID)
 }

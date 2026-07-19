@@ -34,7 +34,7 @@ var _ = Describe("ProviderID", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(serverData.Zone).To(Equal(mock.TestZone))
-			Expect(serverData.ID).To(Equal(mock.TestServerID))
+			Expect(serverData.ID).To(Equal(int64(mock.TestServerID)))
 		})
 
 		It("should fail if an unsupported provider ID scheme is provided", func() {
@@ -94,7 +94,13 @@ var _ = Describe("ProviderID", func() {
 			serverID, err := DecodeServerIDFromProviderID(EncodeProviderID(mock.TestZone, mock.TestServerID))
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(serverID).To(Equal(mock.TestServerID))
+			Expect(serverID).To(Equal(int64(mock.TestServerID)))
+		})
+
+		It("should decode the server ID as int64", func() {
+			id, err := DecodeServerIDFromProviderID("hcloud:///hel1-dc2/12345")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(id).To(Equal(int64(12345)))
 		})
 
 		It("should fail if an unsupported provider ID scheme is provided", func() {
