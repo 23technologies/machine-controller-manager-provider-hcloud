@@ -33,6 +33,7 @@ var _ = Describe("Transcoder", func() {
 
 	providerSecret := &corev1.Secret{
 		Data: map[string][]byte{
+			"token":    []byte("dummy-token"),
 			"userData": []byte("dummy-user-data"),
 		},
 	}
@@ -58,6 +59,23 @@ var _ = Describe("Transcoder", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(spec.Tags).To(HaveKeyWithValue("mcm.gardener.cloud/role", "node"))
 			Expect(spec.ExtraConfig).To(HaveKeyWithValue("foo", "bar"))
+		})
+
+		It("should reject a null providerSpec without panicking", func() {
+			mc := &v1alpha1.MachineClass{ProviderSpec: runtime.RawExtension{Raw: []byte("null")}}
+
+			Expect(func() {
+				_, err := DecodeProviderSpecFromMachineClass(mc, providerSecret)
+				Expect(err).To(HaveOccurred())
+			}).NotTo(Panic())
+		})
+
+		It("should reject a secret missing token/userData", func() {
+			raw := []byte(`{"cluster":"c","zone":"hel1-dc2","serverType":"cx22","imageName":"ubuntu-24.04","sshFingerprint":"aa:bb"}`)
+			mc := &v1alpha1.MachineClass{ProviderSpec: runtime.RawExtension{Raw: raw}}
+
+			_, err := DecodeProviderSpecFromMachineClass(mc, &corev1.Secret{Data: map[string][]byte{}})
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

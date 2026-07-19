@@ -36,7 +36,7 @@ import (
 // secret       *corev1.Secret         Kubernetes secret that contains any sensitive data/credentials
 func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, secret *corev1.Secret) (*apis.ProviderSpec, error) {
 	// Extract providerSpec
-	var providerSpec *apis.ProviderSpec
+	var providerSpec apis.ProviderSpec
 
 	if machineClass == nil {
 		return nil, errors.New("MachineClass provided is nil")
@@ -48,10 +48,10 @@ func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, sec
 	}
 
 	// Validate the Spec
-	validationErr := validation.ValidateHCloudProviderSpec(providerSpec, secret)
-	if validationErr != nil {
+	validationErr := validation.ValidateHCloudProviderSpec(&providerSpec, secret)
+	if len(validationErr) > 0 {
 		return nil, fmt.Errorf("error while validating ProviderSpec %v", validationErr)
 	}
 
-	return providerSpec, nil
+	return &providerSpec, nil
 }

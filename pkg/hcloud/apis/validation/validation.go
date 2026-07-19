@@ -19,6 +19,7 @@ package validation
 
 import (
 	"fmt"
+	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -48,7 +49,19 @@ func ValidateHCloudProviderSpec(spec *apis.ProviderSpec, secrets *corev1.Secret)
 	if spec.SSHFingerprint == "" {
 		allErrs = append(allErrs, fmt.Errorf("sshFingerprint is a required field"))
 	}
-	//allErrs = append(allErrs, ValidateSecret(secret)...)
+	if spec.PlacementGroupID != "" {
+		if _, err := strconv.ParseInt(spec.PlacementGroupID, 10, 64); err != nil {
+			allErrs = append(allErrs, fmt.Errorf("placementGroupID must be numeric: %v", err))
+		}
+	}
+	if secrets != nil {
+		if len(secrets.Data["token"]) == 0 {
+			allErrs = append(allErrs, fmt.Errorf("token is required in the secret"))
+		}
+		if len(secrets.Data["userData"]) == 0 {
+			allErrs = append(allErrs, fmt.Errorf("userData is required in the secret"))
+		}
+	}
 
 	return allErrs
 }
