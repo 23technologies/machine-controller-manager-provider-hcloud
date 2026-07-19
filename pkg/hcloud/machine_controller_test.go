@@ -559,6 +559,22 @@ var _ = Describe("MachineController", func() {
 				},
 			}),
 		)
+
+		It("returns the real server ID in ProviderID when called with a non-empty providerID", func() {
+			ctx := context.Background()
+
+			resp, err := provider.GetMachineStatus(ctx, &driver.GetMachineStatusRequest{
+				Machine:      mock.NewMachine(mock.TestServerID),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       providerSecret,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedProviderID := fmt.Sprintf("hcloud:///%s/%d", mock.TestZone, mock.TestServerID)
+			Expect(resp.ProviderID).To(Equal(expectedProviderID))
+			Expect(resp.ProviderID).NotTo(HaveSuffix("/0"), "ProviderID must encode the real server ID, not the zero value left by a shadowed serverID")
+		})
 	})
 
 	Describe("#ListMachines", func() {

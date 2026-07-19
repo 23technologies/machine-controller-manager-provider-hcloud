@@ -456,7 +456,11 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 
 		serverID = server.ID
 	} else {
-		serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
+		// Assign to the outer serverID/err (declared in the var block above) rather
+		// than shadowing them with :=. Shadowing here would leave the outer serverID
+		// at its zero value, so the ProviderID encoded below would embed server ID 0
+		// instead of the real one.
+		serverID, err = transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
