@@ -19,6 +19,7 @@ package hcloud
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -255,6 +256,116 @@ var _ = Describe("MachineController", func() {
 			Expect(ok).To(BeTrue())
 			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
 		})
+
+		It("returns Unavailable when the image lookup fails transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "image-lookup-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupServersEndpointOnMux(env.Mux, true)
+			env.Mux.HandleFunc("/images", func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(http.StatusInternalServerError)
+			})
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
+
+		It("returns Unavailable when the SSH key lookup fails transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "sshkey-lookup-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupServersEndpointOnMux(env.Mux, true)
+			mock.SetupImagesEndpointOnMux(env.Mux)
+			env.Mux.HandleFunc("/ssh_keys", func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(http.StatusInternalServerError)
+			})
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
+
+		It("returns Unavailable when the network lookup fails transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "network-lookup-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupServersEndpointOnMux(env.Mux, true)
+			mock.SetupImagesEndpointOnMux(env.Mux)
+			mock.SetupSshKeysEndpointOnMux(env.Mux)
+			env.Mux.HandleFunc("/networks", func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(http.StatusInternalServerError)
+			})
+
+			spec := []byte(`{"cluster":"xyz","zone":"hel1-dc2","imageName":"ubuntu-20.04","serverType":"cx11-ceph","sshFingerprint":"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff","networkName":"mynet"}`)
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClassWithProviderSpec(spec),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
 	})
 
 	Describe("#DeleteMachine", func() {
@@ -331,6 +442,23 @@ var _ = Describe("MachineController", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errStatus:         codes.InvalidArgument,
+				},
+			}),
+			Entry("server lookup by ID fails transiently", &data{
+				setup: setup{},
+				action: action{
+					&driver.DeleteMachineRequest{
+						// Server ID 9999 has no mock handler registered, so the HTTP
+						// request hits an unmatched path -- a genuine transient-style
+						// API failure, distinct from a well-formed "not found" response.
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": fmt.Sprintf("hcloud:///%s/9999", mock.TestZone)}),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus:         codes.Unavailable,
 				},
 			}),
 		)
@@ -411,6 +539,23 @@ var _ = Describe("MachineController", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errStatus:         codes.InvalidArgument,
+				},
+			}),
+			Entry("server lookup by ID fails transiently", &data{
+				setup: setup{},
+				action: action{
+					&driver.GetMachineStatusRequest{
+						// Server ID 9999 has no mock handler registered, so the HTTP
+						// request hits an unmatched path -- a genuine transient-style
+						// API failure, distinct from a well-formed "not found" response.
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": fmt.Sprintf("hcloud:///%s/9999", mock.TestZone)}),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus:         codes.Unavailable,
 				},
 			}),
 		)

@@ -107,13 +107,13 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	image, _, err := client.Image.GetByName(ctx, imageName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
 	if image == nil {
 		images, err := client.Image.AllWithOpts(ctx, hcloud.ImageListOpts{Name: imageName, IncludeDeprecated: true})
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
 		if len(images) == 0 {
@@ -148,7 +148,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	sshKey, _, err := client.SSHKey.GetByFingerprint(ctx, providerSpec.SSHFingerprint)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	} else if sshKey == nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("SSH key with fingerprint %s not found", providerSpec.SSHFingerprint))
 	}
@@ -158,7 +158,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	if providerSpec.NetworkName != "" {
 		network, _, err := client.Network.GetByName(ctx, providerSpec.NetworkName)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		} else if network == nil {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Network %s not found", providerSpec.NetworkName))
 		}
@@ -386,13 +386,13 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 
 		server, _, err = client.Server.GetByID(ctx, serverID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 	} else {
 		server, _, err = client.Server.GetByName(ctx, machine.Name)
 	}
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	} else if server == nil {
 		klog.V(3).Infof("VM %s does not exist", machine.Name)
 		return &driver.DeleteMachineResponse{}, nil
@@ -463,7 +463,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 
 		server, _, err = client.Server.GetByID(ctx, serverID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 	}
 
