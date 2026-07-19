@@ -19,6 +19,8 @@ package hcloud
 
 import (
 	"context"
+	"net/http"
+	"strings"
 
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
@@ -210,6 +212,48 @@ var _ = Describe("MachineController", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(mock.ServerDeleteHitCount()).To(Equal(int32(0)), "create-error cleanup must never delete a server found only by name")
+		})
+
+		It("fails create when the initial Server.GetByName lookup errors transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "getbyname-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			// No /images or /ssh_keys handlers registered: if the GetByName error is
+			// (incorrectly) swallowed, execution falls through to those lookups and
+			// fails there instead -- with the wrong error code. Only a fix that
+			// surfaces the GetByName error directly returns codes.Unavailable here.
+			env.Mux.HandleFunc("/servers", func(res http.ResponseWriter, req *http.Request) {
+				if strings.ToLower(req.Method) == "get" {
+					res.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				panic("unexpected method on /servers in this test")
+			})
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
 		})
 	})
 

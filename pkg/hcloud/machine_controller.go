@@ -84,7 +84,10 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
-	server, _, _ := client.Server.GetByName(ctx, machine.Name)
+	server, _, err := client.Server.GetByName(ctx, machine.Name)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, err.Error())
+	}
 
 	if nil != server {
 		var errorCode codes.Code
