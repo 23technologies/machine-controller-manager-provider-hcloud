@@ -23,11 +23,53 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+// placementGroupGetByIDHits and addToPlacementGroupHits count how many times the
+// respective mock endpoints have been invoked. Tests use these counters to assert
+// that the placement-group flow was actually exercised, not merely that CreateMachine
+// returned without error.
+var (
+	placementGroupGetByIDHits int32
+	addToPlacementGroupHits   int32
+)
+
+// ResetPlacementGroupHitCounters resets the placement-group hit counters. Call this
+// from BeforeEach so counts don't leak between test cases.
+func ResetPlacementGroupHitCounters() {
+	atomic.StoreInt32(&placementGroupGetByIDHits, 0)
+	atomic.StoreInt32(&addToPlacementGroupHits, 0)
+}
+
+// PlacementGroupGetByIDHitCount returns how many times GET /placement_groups/{id} was hit.
+func PlacementGroupGetByIDHitCount() int32 {
+	return atomic.LoadInt32(&placementGroupGetByIDHits)
+}
+
+// AddToPlacementGroupHitCount returns how many times POST .../actions/add_to_placement_group was hit.
+func AddToPlacementGroupHitCount() int32 {
+	return atomic.LoadInt32(&addToPlacementGroupHits)
+}
+
+// serverDeleteHits counts how many times DELETE /servers/{id} was hit via the endpoint
+// registered by SetupTestServerEndpointOnMux. Tests use this to prove that create-error
+// cleanup never deletes a server it did not itself create.
+var serverDeleteHits int32
+
+// ResetServerDeleteHitCounter resets the server-delete hit counter.
+func ResetServerDeleteHitCounter() {
+	atomic.StoreInt32(&serverDeleteHits, 0)
+}
+
+// ServerDeleteHitCount returns how many times DELETE /servers/{id} was hit.
+func ServerDeleteHitCount() int32 {
+	return atomic.LoadInt32(&serverDeleteHits)
+}
 
 const (
 	jsonImageData = `
@@ -405,6 +447,7 @@ func SetupTestPlacementGroupEndpointOnMux(mux *http.ServeMux) {
 		if strings.ToLower(req.Method) != "get" {
 			panic("Unsupported HTTP method call")
 		}
+		atomic.AddInt32(&placementGroupGetByIDHits, 1)
 		res.WriteHeader(http.StatusOK)
 
 		res.Write([]byte(`
@@ -433,6 +476,7 @@ func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
 		res.Header().Add("Content-Type", "application/json; charset=utf-8")
 
 		if strings.ToLower(req.Method) == "delete" {
+			atomic.AddInt32(&serverDeleteHits, 1)
 			res.WriteHeader(http.StatusOK)
 			res.Write([]byte(fmt.Sprintf("{ \"server\": %s }", newJsonServerData(TestServerID, "shutdown_server"))))
 		} else if strings.ToLower(req.Method) == "get" {
@@ -472,6 +516,7 @@ func SetupTestServerEndpointOnMux(mux *http.ServeMux) {
 			panic("Invalid HTTP method data")
 		}
 
+		atomic.AddInt32(&addToPlacementGroupHits, 1)
 		res.Write([]byte("{ \"action\": {} }"))
 
 	})

@@ -26,7 +26,7 @@ import (
 	"k8s.io/component-base/logs"
 	"k8s.io/component-base/version/verflag"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud"
 )
 
 // RunProviderHCloudManager runs the HCloud machine controller server.

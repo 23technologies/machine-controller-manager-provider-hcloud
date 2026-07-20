@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hetznercloud/hcloud-go/hcloud"
+	"github.com/hetznercloud/hcloud-go/v2/hcloud"
 	"k8s.io/klog/v2"
 )
 

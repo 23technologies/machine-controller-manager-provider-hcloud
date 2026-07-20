@@ -19,6 +19,9 @@ package hcloud
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
@@ -28,8 +31,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 )
 
 var provider *MachineProvider
@@ -57,6 +60,7 @@ var _ = Describe("MachineController", func() {
 		mock.SetupSshKeysEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestPlacementGroupEndpointOnMux(mockTestEnv.Mux)
 		mock.SetupTestServerEndpointOnMux(mockTestEnv.Mux)
+		mock.ResetPlacementGroupHitCounters()
 	})
 
 	var _ = AfterEach(func() {
@@ -156,6 +160,212 @@ var _ = Describe("MachineController", func() {
 				},
 			}),
 		)
+
+		It("applies the placement group when PlacementGroupID is set without a floating pool", func() {
+			ctx := context.Background()
+
+			// TestProviderSpec carries placementGroupID "42" and no floatingPoolName,
+			// so the placement-group flow must be driven by PlacementGroupID alone.
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       providerSecret,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(mock.PlacementGroupGetByIDHitCount()).To(BeNumerically(">", 0), "expected GET /placement_groups/42 to be hit")
+			Expect(mock.AddToPlacementGroupHitCount()).To(BeNumerically(">", 0), "expected add_to_placement_group action to be hit")
+		})
+
+		It("does not delete a foreign server that merely shares a name (never deletes by name)", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "cleanup-foreign-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupImagesEndpointOnMux(env.Mux)
+			mock.SetupSshKeysEndpointOnMux(env.Mux)
+			mock.SetupFloatingIPsEndpointOnMux(env.Mux)
+			// emptyOnFirstRequest=false: GetByName finds a server named "machine-0"
+			// immediately. That fixture server carries no labels, so it does not match
+			// this request's providerSpec labels and createMachineValidateDeploymentAndCleanup
+			// correctly treats it as foreign (not created by this request).
+			mock.SetupServersEndpointOnMux(env.Mux, false)
+			mock.SetupTestServerEndpointOnMux(env.Mux)
+			mock.ResetServerDeleteHitCounter()
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(mock.ServerDeleteHitCount()).To(Equal(int32(0)), "create-error cleanup must never delete a server found only by name")
+		})
+
+		It("fails create when the initial Server.GetByName lookup errors transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "getbyname-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			// No /images or /ssh_keys handlers registered: if the GetByName error is
+			// (incorrectly) swallowed, execution falls through to those lookups and
+			// fails there instead -- with the wrong error code. Only a fix that
+			// surfaces the GetByName error directly returns codes.Unavailable here.
+			env.Mux.HandleFunc("/servers", func(res http.ResponseWriter, req *http.Request) {
+				if strings.ToLower(req.Method) == "get" {
+					res.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				panic("unexpected method on /servers in this test")
+			})
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
+
+		It("returns Unavailable when the image lookup fails transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "image-lookup-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupServersEndpointOnMux(env.Mux, true)
+			env.Mux.HandleFunc("/images", func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(http.StatusInternalServerError)
+			})
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
+
+		It("returns Unavailable when the SSH key lookup fails transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "sshkey-lookup-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupServersEndpointOnMux(env.Mux, true)
+			mock.SetupImagesEndpointOnMux(env.Mux)
+			env.Mux.HandleFunc("/ssh_keys", func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(http.StatusInternalServerError)
+			})
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
+
+		It("returns Unavailable when the network lookup fails transiently", func() {
+			ctx := context.Background()
+
+			env := mock.NewMockTestEnv()
+			defer env.Teardown()
+
+			const token = "network-lookup-error-token"
+			apis.SetClientForToken(token, env.Client)
+			defer apis.SetClientForToken(token, nil)
+
+			mock.SetupServersEndpointOnMux(env.Mux, true)
+			mock.SetupImagesEndpointOnMux(env.Mux)
+			mock.SetupSshKeysEndpointOnMux(env.Mux)
+			env.Mux.HandleFunc("/networks", func(res http.ResponseWriter, req *http.Request) {
+				res.WriteHeader(http.StatusInternalServerError)
+			})
+
+			spec := []byte(`{"cluster":"xyz","zone":"hel1-dc2","imageName":"ubuntu-20.04","serverType":"cx11-ceph","sshFingerprint":"00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff","networkName":"mynet"}`)
+
+			secret := &corev1.Secret{
+				Data: map[string][]byte{
+					"token":    []byte(token),
+					"userData": []byte("dummy-user-data"),
+				},
+			}
+
+			_, err := provider.CreateMachine(ctx, &driver.CreateMachineRequest{
+				Machine:      mock.NewMachine(-1),
+				MachineClass: mock.NewMachineClassWithProviderSpec(spec),
+				Secret:       secret,
+			})
+
+			Expect(err).To(HaveOccurred())
+
+			errStatus, ok := err.(*status.Status)
+			Expect(ok).To(BeTrue())
+			Expect(errStatus.Code()).To(Equal(codes.Unavailable))
+		})
 	})
 
 	Describe("#DeleteMachine", func() {
@@ -232,6 +442,23 @@ var _ = Describe("MachineController", func() {
 				expect: expect{
 					errToHaveOccurred: true,
 					errStatus:         codes.InvalidArgument,
+				},
+			}),
+			Entry("server lookup by ID fails transiently", &data{
+				setup: setup{},
+				action: action{
+					&driver.DeleteMachineRequest{
+						// Server ID 9999 has no mock handler registered, so the HTTP
+						// request hits an unmatched path -- a genuine transient-style
+						// API failure, distinct from a well-formed "not found" response.
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": fmt.Sprintf("hcloud:///%s/9999", mock.TestZone)}),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus:         codes.Unavailable,
 				},
 			}),
 		)
@@ -314,7 +541,40 @@ var _ = Describe("MachineController", func() {
 					errStatus:         codes.InvalidArgument,
 				},
 			}),
+			Entry("server lookup by ID fails transiently", &data{
+				setup: setup{},
+				action: action{
+					&driver.GetMachineStatusRequest{
+						// Server ID 9999 has no mock handler registered, so the HTTP
+						// request hits an unmatched path -- a genuine transient-style
+						// API failure, distinct from a well-formed "not found" response.
+						Machine:      mock.ManipulateMachine(mock.NewMachine(mock.TestServerID), map[string]interface{}{"Spec.ProviderID": fmt.Sprintf("hcloud:///%s/9999", mock.TestZone)}),
+						MachineClass: mock.NewMachineClass(),
+						Secret:       providerSecret,
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errStatus:         codes.Unavailable,
+				},
+			}),
 		)
+
+		It("returns the real server ID in ProviderID when called with a non-empty providerID", func() {
+			ctx := context.Background()
+
+			resp, err := provider.GetMachineStatus(ctx, &driver.GetMachineStatusRequest{
+				Machine:      mock.NewMachine(mock.TestServerID),
+				MachineClass: mock.NewMachineClass(),
+				Secret:       providerSecret,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedProviderID := fmt.Sprintf("hcloud:///%s/%d", mock.TestZone, mock.TestServerID)
+			Expect(resp.ProviderID).To(Equal(expectedProviderID))
+			Expect(resp.ProviderID).NotTo(HaveSuffix("/0"), "ProviderID must encode the real server ID, not the zero value left by a shadowed serverID")
+		})
 	})
 
 	Describe("#ListMachines", func() {

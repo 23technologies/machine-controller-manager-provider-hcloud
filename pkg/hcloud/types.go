@@ -18,8 +18,8 @@ limitations under the License.
 package hcloud
 
 type CreateMachineMethodData struct {
-	ServerID     int
-	FloatingIPID int
+	ServerID     int64
+	FloatingIPID int64
 }
 
 type CtxWrapDataKey string

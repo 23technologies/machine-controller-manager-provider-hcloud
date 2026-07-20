@@ -27,11 +27,11 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/driver"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
-	"github.com/hetznercloud/hcloud-go/hcloud"
+	"github.com/hetznercloud/hcloud-go/v2/hcloud"
 	"k8s.io/klog/v2"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/transcoder"
 )
 
 // CreateMachine handles a machine creation request
@@ -84,7 +84,10 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	client := apis.GetClientForToken(string(secret.Data["token"]))
 
-	server, _, _ := client.Server.GetByName(ctx, machine.Name)
+	server, _, err := client.Server.GetByName(ctx, machine.Name)
+	if err != nil {
+		return nil, status.Error(codes.Unavailable, err.Error())
+	}
 
 	if nil != server {
 		var errorCode codes.Code
@@ -104,13 +107,13 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 
 	image, _, err := client.Image.GetByName(ctx, imageName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
 	if image == nil {
 		images, err := client.Image.AllWithOpts(ctx, hcloud.ImageListOpts{Name: imageName, IncludeDeprecated: true})
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
 		if len(images) == 0 {
@@ -139,9 +142,13 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 		StartAfterCreate: &startAfterCreate,
 	}
 
+	for k, v := range providerSpec.Tags {
+		opts.Labels[k] = v
+	}
+
 	sshKey, _, err := client.SSHKey.GetByFingerprint(ctx, providerSpec.SSHFingerprint)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	} else if sshKey == nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("SSH key with fingerprint %s not found", providerSpec.SSHFingerprint))
 	}
@@ -151,7 +158,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 	if providerSpec.NetworkName != "" {
 		network, _, err := client.Network.GetByName(ctx, providerSpec.NetworkName)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		} else if network == nil {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Network %s not found", providerSpec.NetworkName))
 		}
@@ -171,15 +178,15 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	if providerSpec.FloatingPoolName != "" {
-		placementGroupID, err := strconv.Atoi(providerSpec.PlacementGroupID)
+	if providerSpec.PlacementGroupID != "" {
+		placementGroupID, err := strconv.ParseInt(providerSpec.PlacementGroupID, 10, 64)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		placementGroup, _, err := client.PlacementGroup.GetByID(ctx, placementGroupID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
 		_, _, err = client.Server.AddToPlacementGroup(ctx, server, placementGroup)
@@ -187,7 +194,7 @@ func (p *MachineProvider) createMachine(ctx context.Context, req *driver.CreateM
 			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 
-		server, err = apis.WaitForActionsAndGetServer(ctx, client, serverResult.Server)
+		server, err = apis.WaitForActionsAndGetServer(ctx, client, server)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
@@ -332,14 +339,11 @@ func (p *MachineProvider) createMachineOnErrorCleanup(ctx context.Context, req *
 	client := apis.GetClientForToken(string(req.Secret.Data["token"]))
 	resultData := ctx.Value(CtxWrapDataKey("MethodData")).(*CreateMachineMethodData)
 
-	var server *hcloud.Server
 	if resultData.ServerID != 0 {
-		server, _, _ = client.Server.GetByID(ctx, resultData.ServerID)
-	} else {
-		server, _, _ = client.Server.GetByName(ctx, req.Machine.Name)
-	}
-	if nil != server {
-		_, _ = client.Server.Delete(ctx, server)
+		server, _, _ := client.Server.GetByID(ctx, resultData.ServerID)
+		if nil != server {
+			_, _ = client.Server.Delete(ctx, server)
+		}
 	}
 
 	if resultData.FloatingIPID != 0 {
@@ -382,13 +386,13 @@ func (p *MachineProvider) DeleteMachine(ctx context.Context, req *driver.DeleteM
 
 		server, _, err = client.Server.GetByID(ctx, serverID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 	} else {
 		server, _, err = client.Server.GetByName(ctx, machine.Name)
 	}
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Unavailable, err.Error())
 	} else if server == nil {
 		klog.V(3).Infof("VM %s does not exist", machine.Name)
 		return &driver.DeleteMachineResponse{}, nil
@@ -428,7 +432,7 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 		secret       = req.Secret
 		machineClass = req.MachineClass
 		server       *hcloud.Server
-		serverID     int
+		serverID     int64
 	)
 
 	// Log messages to track start and end of request
@@ -452,14 +456,18 @@ func (p *MachineProvider) GetMachineStatus(ctx context.Context, req *driver.GetM
 
 		serverID = server.ID
 	} else {
-		serverID, err := transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
+		// Assign to the outer serverID/err (declared in the var block above) rather
+		// than shadowing them with :=. Shadowing here would leave the outer serverID
+		// at its zero value, so the ProviderID encoded below would embed server ID 0
+		// instead of the real one.
+		serverID, err = transcoder.DecodeServerIDFromProviderID(machine.Spec.ProviderID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		server, _, err = client.Server.GetByID(ctx, serverID)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.Unavailable, err.Error())
 		}
 	}
 

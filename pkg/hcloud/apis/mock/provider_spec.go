@@ -18,7 +18,7 @@ limitations under the License.
 package mock
 
 import (
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
 )
 
 const (

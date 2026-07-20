@@ -1,7 +1,7 @@
 #############      builder                                  #############
-FROM golang:1.24.4 AS builder
+FROM golang:1.26.2 AS builder
 
-WORKDIR /go/src/github.com/23technologies/machine-controller-manager-provider-hcloud
+WORKDIR /go/src/github.com/opendefensecloud/machine-controller-manager-provider-hcloud
 COPY . .
 RUN make install
 

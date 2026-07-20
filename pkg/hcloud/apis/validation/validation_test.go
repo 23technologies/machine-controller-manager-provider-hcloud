@@ -19,18 +19,20 @@ package validation
 
 import (
 	"fmt"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 )
 
 var _ = Describe("Validation", func() {
 	providerSecret := &corev1.Secret{
 		Data: map[string][]byte{
+			"token":    []byte("dummy-token"),
 			"userData": []byte("dummy-user-data"),
 		},
 	}
@@ -164,6 +166,60 @@ var _ = Describe("Validation", func() {
 					errToHaveOccurred: true,
 					errList: []error{
 						fmt.Errorf("sshFingerprint is a required field"),
+					},
+				},
+			}),
+			Entry("token missing from secret", &data{
+				setup: setup{},
+				action: action{
+					spec: mock.NewProviderSpec(),
+					secret: &corev1.Secret{
+						Data: map[string][]byte{
+							"userData": []byte("dummy-user-data"),
+						},
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("token is required in the secret"),
+					},
+				},
+			}),
+			Entry("userData missing from secret", &data{
+				setup: setup{},
+				action: action{
+					spec: mock.NewProviderSpec(),
+					secret: &corev1.Secret{
+						Data: map[string][]byte{
+							"token": []byte("dummy-token"),
+						},
+					},
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("userData is required in the secret"),
+					},
+				},
+			}),
+			Entry("placementGroupID non-numeric", &data{
+				setup: setup{},
+				action: action{
+					spec: &apis.ProviderSpec{
+						Cluster:          mock.TestCluster,
+						Zone:             mock.TestZone,
+						ImageName:        mock.TestImageName,
+						ServerType:       mock.TestServerType,
+						SSHFingerprint:   mock.TestSSHFingerprint,
+						PlacementGroupID: "not-a-number",
+					},
+					secret: providerSecret,
+				},
+				expect: expect{
+					errToHaveOccurred: true,
+					errList: []error{
+						fmt.Errorf("placementGroupID must be numeric: %v", &strconv.NumError{Func: "ParseInt", Num: "not-a-number", Err: strconv.ErrSyntax}),
 					},
 				},
 			}),

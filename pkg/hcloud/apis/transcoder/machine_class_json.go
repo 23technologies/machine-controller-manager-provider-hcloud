@@ -25,8 +25,8 @@ import (
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/validation"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/validation"
 )
 
 // DecodeProviderSpecFromMachineClass decodes the given MachineClass to receive the ProviderSpec.
@@ -36,7 +36,7 @@ import (
 // secret       *corev1.Secret         Kubernetes secret that contains any sensitive data/credentials
 func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, secret *corev1.Secret) (*apis.ProviderSpec, error) {
 	// Extract providerSpec
-	var providerSpec *apis.ProviderSpec
+	var providerSpec apis.ProviderSpec
 
 	if machineClass == nil {
 		return nil, errors.New("MachineClass provided is nil")
@@ -48,10 +48,10 @@ func DecodeProviderSpecFromMachineClass(machineClass *v1alpha1.MachineClass, sec
 	}
 
 	// Validate the Spec
-	validationErr := validation.ValidateHCloudProviderSpec(providerSpec, secret)
-	if validationErr != nil {
+	validationErr := validation.ValidateHCloudProviderSpec(&providerSpec, secret)
+	if len(validationErr) > 0 {
 		return nil, fmt.Errorf("error while validating ProviderSpec %v", validationErr)
 	}
 
-	return providerSpec, nil
+	return &providerSpec, nil
 }

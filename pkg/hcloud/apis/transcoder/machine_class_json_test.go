@@ -18,11 +18,13 @@ limitations under the License.
 package transcoder
 
 import (
+	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/23technologies/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
+	"github.com/opendefensecloud/machine-controller-manager-provider-hcloud/pkg/hcloud/apis/mock"
 )
 
 var _ = Describe("Transcoder", func() {
@@ -31,6 +33,7 @@ var _ = Describe("Transcoder", func() {
 
 	providerSecret := &corev1.Secret{
 		Data: map[string][]byte{
+			"token":    []byte("dummy-token"),
 			"userData": []byte("dummy-user-data"),
 		},
 	}
@@ -46,6 +49,32 @@ var _ = Describe("Transcoder", func() {
 		It("should fail if an invalid machineClass is provided", func() {
 			_, err := DecodeProviderSpecFromMachineClass(unsupportedMachineClass, providerSecret)
 
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should decode tags and extraConfig", func() {
+			raw := []byte(`{"cluster":"c","zone":"hel1-dc2","serverType":"cx22","imageName":"ubuntu-24.04","sshFingerprint":"aa:bb","tags":{"mcm.gardener.cloud/cluster":"c","mcm.gardener.cloud/role":"node"},"extraConfig":{"foo":"bar"}}`)
+			mc := &v1alpha1.MachineClass{ProviderSpec: runtime.RawExtension{Raw: raw}}
+			spec, err := DecodeProviderSpecFromMachineClass(mc, providerSecret)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(spec.Tags).To(HaveKeyWithValue("mcm.gardener.cloud/role", "node"))
+			Expect(spec.ExtraConfig).To(HaveKeyWithValue("foo", "bar"))
+		})
+
+		It("should reject a null providerSpec without panicking", func() {
+			mc := &v1alpha1.MachineClass{ProviderSpec: runtime.RawExtension{Raw: []byte("null")}}
+
+			Expect(func() {
+				_, err := DecodeProviderSpecFromMachineClass(mc, providerSecret)
+				Expect(err).To(HaveOccurred())
+			}).NotTo(Panic())
+		})
+
+		It("should reject a secret missing token/userData", func() {
+			raw := []byte(`{"cluster":"c","zone":"hel1-dc2","serverType":"cx22","imageName":"ubuntu-24.04","sshFingerprint":"aa:bb"}`)
+			mc := &v1alpha1.MachineClass{ProviderSpec: runtime.RawExtension{Raw: raw}}
+
+			_, err := DecodeProviderSpecFromMachineClass(mc, &corev1.Secret{Data: map[string][]byte{}})
 			Expect(err).To(HaveOccurred())
 		})
 	})
