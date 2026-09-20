@@ -61,7 +61,7 @@ start:
 
 .PHONY: install
 install:
-	@LD_FLAGS="-w -X github.com/opendefensecloud/$(NAME)/pkg/version.Version=$(VERSION)" \
+	@LD_FLAGS="$$(bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME)) -w -X github.com/opendefensecloud/$(NAME)/pkg/version.Version=$(VERSION)" \
 	bash $(GARDENER_HACK_DIR)/install.sh ./...
 
 .PHONY: generate
